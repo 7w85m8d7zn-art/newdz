@@ -109,7 +109,8 @@ img {
 .home-body {
   background: #0f0f0f;
   color: #f6f1ea;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .home-body::before,
@@ -2392,6 +2393,13 @@ body.admin-body .toast-container {
 }
 
 @media (max-width: 720px) {
+  .home-shell {
+    min-height: auto;
+  }
+
+  .home-content {
+    min-height: auto;
+  }
   .home-content {
     padding: 1.6rem 0.9rem;
   }
