@@ -6,6 +6,7 @@ const express = require('express');
 const session = require('express-session');
 const multer = require('multer');
 const QRCode = require('qrcode');
+const { createClient } = require('@supabase/supabase-js');
 const db = require('./db');
 
 const app = express();
@@ -18,6 +19,17 @@ const buildNoticeUrl = (path, message) => {
   const params = new URLSearchParams({ notice: message });
   return `${path}?${params.toString()}`;
 };
+
+const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseServiceKey =
+  process.env.SUPABASE_SERVICE_ROLE_KEY ||
+  process.env.SUPABASE_SERVICE_ROLE ||
+  process.env.SUPABASE_SECRET_KEY;
+const storageBucket = process.env.SUPABASE_STORAGE_BUCKET || 'uploads';
+const storageEnabled = Boolean(supabaseUrl && supabaseServiceKey);
+const supabase = storageEnabled
+  ? createClient(supabaseUrl, supabaseServiceKey, { auth: { persistSession: false } })
+  : null;
 
 const isVercel = Boolean(process.env.VERCEL);
 const uploadsDir =
@@ -33,23 +45,26 @@ try {
   console.warn('Yükleme klasörü oluşturulamadı, dosya yüklemeleri devre dışı:', error.message);
 }
 
-const storage = uploadsEnabled
-  ? multer.diskStorage({
-      destination: (req, file, cb) => cb(null, uploadsDir),
-      filename: (req, file, cb) => {
-        const ext = path.extname(file.originalname).toLowerCase() || '.jpg';
-        const safeName = `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
-        cb(null, safeName);
-      }
-    })
-  : multer.memoryStorage();
+const storage = storageEnabled
+  ? multer.memoryStorage()
+  : uploadsEnabled
+    ? multer.diskStorage({
+        destination: (req, file, cb) => cb(null, uploadsDir),
+        filename: (req, file, cb) => {
+          const ext = path.extname(file.originalname).toLowerCase() || '.jpg';
+          const safeName = `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
+          cb(null, safeName);
+        }
+      })
+    : multer.memoryStorage();
 
 const MAX_UPLOAD_MB = Number(process.env.MAX_UPLOAD_MB || 8);
+const uploadAllowed = storageEnabled || uploadsEnabled;
 const upload = multer({
   storage,
   limits: { fileSize: MAX_UPLOAD_MB * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
-    if (!uploadsEnabled) {
+    if (!uploadAllowed) {
       return cb(new Error('Dosya yükleme devre dışı (salt-okunur dosya sistemi).'));
     }
     if (file.mimetype && file.mimetype.startsWith('image/')) {
@@ -76,25 +91,96 @@ app.use(
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/uploads', express.static(uploadsDir));
 
+let storageReadyPromise = null;
+const ensureStorageBucket = async () => {
+  if (!supabase) return false;
+  if (storageReadyPromise) return storageReadyPromise;
+  storageReadyPromise = (async () => {
+    const { data, error } = await supabase.storage.listBuckets();
+    if (error) {
+      console.warn('Supabase bucket listesi alınamadı:', error.message);
+      return false;
+    }
+    const exists = Array.isArray(data) && data.some((bucket) => bucket.name === storageBucket);
+    if (!exists) {
+      const { error: createError } = await supabase.storage.createBucket(storageBucket, {
+        public: true
+      });
+      if (createError) {
+        console.warn('Supabase bucket oluşturulamadı:', createError.message);
+        return false;
+      }
+    }
+    return true;
+  })();
+  return storageReadyPromise;
+};
+
+const uploadImage = async (file, folder) => {
+  if (!file) return null;
+  if (!storageEnabled) {
+    return file.filename ? `/uploads/${file.filename}` : null;
+  }
+  const ready = await ensureStorageBucket();
+  if (!ready) {
+    console.warn('Supabase storage hazır değil, yükleme yapılamadı.');
+    return null;
+  }
+  const ext = path.extname(file.originalname || '').toLowerCase() || '.jpg';
+  const objectPath = `${folder}/${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
+  const buffer = file.buffer || (file.path ? fs.readFileSync(file.path) : null);
+  if (!buffer) return null;
+  const { error } = await supabase.storage.from(storageBucket).upload(objectPath, buffer, {
+    contentType: file.mimetype || 'image/jpeg',
+    upsert: false
+  });
+  if (file.path) {
+    try {
+      fs.unlinkSync(file.path);
+    } catch (err) {
+      // ignore cleanup errors
+    }
+  }
+  if (error) {
+    console.warn('Görsel yüklenemedi:', error.message);
+    return null;
+  }
+  const { data } = supabase.storage.from(storageBucket).getPublicUrl(objectPath);
+  return data?.publicUrl || null;
+};
+
+const deleteUploadedFile = async (imagePath) => {
+  if (!imagePath) return;
+  if (storageEnabled) {
+    const prefix = `/storage/v1/object/public/${storageBucket}/`;
+    if (imagePath.includes(prefix)) {
+      try {
+        const url = new URL(imagePath);
+        const parts = url.pathname.split(prefix);
+        const objectPath = parts[1] ? decodeURIComponent(parts[1]) : null;
+        if (objectPath) {
+          await supabase.storage.from(storageBucket).remove([objectPath]);
+          return;
+        }
+      } catch (err) {
+        // fall back to local delete
+      }
+    }
+  }
+  if (!uploadsEnabled) return;
+  if (!imagePath.startsWith('/uploads/')) return;
+  const relativePath = imagePath.replace(/^\/uploads\//, '');
+  const filePath = path.join(uploadsDir, relativePath);
+  if (fs.existsSync(filePath)) {
+    fs.unlinkSync(filePath);
+  }
+};
+
 function requireAdmin(req, res, next) {
   if (req.session?.isAdmin) {
     return next();
   }
   return res.redirect('/login');
-}
-
-function deleteUploadedFile(imagePath) {
-  if (!uploadsEnabled) return;
-  if (!imagePath || !imagePath.startsWith('/uploads/')) return;
-  const relativePath = imagePath.replace(/^\/uploads\//, '');
-  const filePath = path.join(uploadsDir, relativePath);
-  try {
-    if (fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
-    }
-  } catch (error) {
-    console.warn('Görsel silinemedi:', error.message);
-  }
 }
 
 app.get('/', async (req, res) => {
@@ -245,23 +331,29 @@ app.post(
   }
 
   if (req.body.remove_background) {
-    deleteUploadedFile(currentSettings.background_image);
+    await deleteUploadedFile(currentSettings.background_image);
     backgroundImage = '';
   }
 
   if (backgroundFile) {
-    deleteUploadedFile(currentSettings.background_image);
-    backgroundImage = `/uploads/${backgroundFile.filename}`;
+    const uploaded = await uploadImage(backgroundFile, 'welcome');
+    if (uploaded) {
+      await deleteUploadedFile(currentSettings.background_image);
+      backgroundImage = uploaded;
+    }
   }
 
   if (req.body.remove_logo) {
-    deleteUploadedFile(currentSettings.logo_image);
+    await deleteUploadedFile(currentSettings.logo_image);
     logoImage = '';
   }
 
   if (logoFile) {
-    deleteUploadedFile(currentSettings.logo_image);
-    logoImage = `/uploads/${logoFile.filename}`;
+    const uploaded = await uploadImage(logoFile, 'welcome');
+    if (uploaded) {
+      await deleteUploadedFile(currentSettings.logo_image);
+      logoImage = uploaded;
+    }
   }
 
   await db.updateWelcome({
@@ -323,7 +415,7 @@ app.post('/admin/products', upload.single('image'), async (req, res) => {
   const { categoryId, name, description, price } = req.body;
   let noticeMessage = 'Değişiklikler yapıldı.';
   if (categoryId && name?.trim()) {
-    const imagePath = req.file ? `/uploads/${req.file.filename}` : null;
+    const imagePath = req.file ? await uploadImage(req.file, 'products') : null;
     const categories = await db.getCategories();
     const categoryName = categories.find((category) => category.id === Number(categoryId))?.name;
     await db.addProduct({
@@ -367,13 +459,16 @@ app.post('/admin/products/:id/edit', upload.single('image'), async (req, res) =>
   let imagePath = existing.image_path || null;
 
   if (removeImage) {
-    deleteUploadedFile(imagePath);
+    await deleteUploadedFile(imagePath);
     imagePath = null;
   }
 
   if (req.file) {
-    deleteUploadedFile(imagePath);
-    imagePath = `/uploads/${req.file.filename}`;
+    const uploaded = await uploadImage(req.file, 'products');
+    if (uploaded) {
+      await deleteUploadedFile(imagePath);
+      imagePath = uploaded;
+    }
   }
 
   if (categoryId && name?.trim()) {
@@ -394,7 +489,7 @@ app.post('/admin/products/:id/delete', async (req, res) => {
   const id = Number(req.params.id);
   const existing = await db.getProductById(id);
   if (existing?.image_path) {
-    deleteUploadedFile(existing.image_path);
+    await deleteUploadedFile(existing.image_path);
   }
   await db.deleteProduct(id);
   const message = existing?.name ? `Ürün silindi: ${existing.name}` : 'Ürün silindi.';
