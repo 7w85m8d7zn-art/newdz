@@ -75,6 +75,8 @@ const upload = multer({
   }
 });
 
+const ADMIN_PAGE_SIZE = Math.min(50, Math.max(10, Number(process.env.ADMIN_PAGE_SIZE || 20)));
+
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
@@ -442,11 +444,21 @@ app.post('/admin/categories/:id/delete', async (req, res) => {
 
 app.get('/admin/products', async (req, res) => {
   const categories = await db.getCategories();
-  const products = await db.getAllProducts();
+  const page = Math.max(1, Number(req.query.page) || 1);
+  const limit = Math.min(50, Math.max(10, Number(req.query.limit) || ADMIN_PAGE_SIZE));
+  const offset = (page - 1) * limit;
+  const result = await db.getAllProducts({ limit, offset, includeTotal: true });
+  const products = result.products || [];
+  const total = result.total || 0;
+  const totalPages = Math.max(1, Math.ceil(total / limit));
   res.render('admin/products', {
     pageTitle: 'Ürünler',
     categories,
-    products
+    products,
+    total,
+    page,
+    totalPages,
+    pageSize: limit
   });
 });
 

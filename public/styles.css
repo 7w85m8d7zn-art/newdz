@@ -2112,6 +2112,24 @@ body.admin-body .toast-container {
   z-index: 1000;
 }
 
+.pagination {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+  margin: 1rem 0 2rem;
+}
+
+.pagination-info {
+  font-size: 0.9rem;
+  color: #6b635d;
+}
+
+.btn.disabled {
+  pointer-events: none;
+  opacity: 0.5;
+}
+
 .confirm-modal.is-open {
   display: flex;
 }
@@ -2565,6 +2583,15 @@ body.admin-body .toast-container {
 
   .toast {
     max-width: none;
+  }
+
+  .pagination {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .pagination-info {
+    text-align: center;
   }
 
   .admin-nav {

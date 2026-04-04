@@ -58,7 +58,7 @@
               <strong><%= product.name %></strong>
               <% if (product.image_path) { %>
                 <div class="thumb-wrap">
-                  <img class="thumb" src="<%= product.image_path %>" alt="<%= product.name %>" />
+                  <img class="thumb" src="<%= product.image_path %>" alt="<%= product.name %>" loading="lazy" decoding="async" />
                 </div>
               <% } %>
               <% if (product.description) { %>
@@ -77,6 +77,16 @@
         <% }) %>
       </div>
     </section>
+
+    <% if (totalPages && totalPages > 1) { %>
+      <div class="pagination">
+        <% const prevPage = Math.max(1, page - 1); %>
+        <% const nextPage = Math.min(totalPages, page + 1); %>
+        <a class="btn ghost <%= page === 1 ? 'disabled' : '' %>" href="/admin/products?page=<%= prevPage %>">Önceki</a>
+        <span class="pagination-info">Sayfa <%= page %> / <%= totalPages %> (Toplam <%= total %>)</span>
+        <a class="btn ghost <%= page === totalPages ? 'disabled' : '' %>" href="/admin/products?page=<%= nextPage %>">Sonraki</a>
+      </div>
+    <% } %>
   </div>
 </div>
 

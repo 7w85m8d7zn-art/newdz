@@ -487,30 +487,71 @@ async function getProductsByCategory(categoryId) {
   return data || [];
 }
 
-async function getAllProducts() {
+async function getAllProducts(options = {}) {
+  const limit = Number.isFinite(options.limit) ? options.limit : null;
+  const offset = Number.isFinite(options.offset) ? options.offset : 0;
+  const includeTotal = options.includeTotal === true;
+
   if (!useSupabase) {
-    return sqlite.prepare(`
+    if (!limit) {
+      return sqlite.prepare(`
+        SELECT products.*, categories.name AS category_name
+        FROM products
+        JOIN categories ON categories.id = products.category_id
+        ORDER BY products.id DESC
+      `).all();
+    }
+
+    const products = sqlite.prepare(`
       SELECT products.*, categories.name AS category_name
       FROM products
       JOIN categories ON categories.id = products.category_id
       ORDER BY products.id DESC
-    `).all();
+      LIMIT ? OFFSET ?
+    `).all(limit, offset);
+
+    if (!includeTotal) {
+      return products;
+    }
+
+    const total = sqlite.prepare('SELECT COUNT(*) AS count FROM products').get().count;
+    return { products, total };
   }
 
-  const { data, error } = await supabase
+  if (!limit) {
+    const { data, error } = await supabase
+      .from('products')
+      .select('*, categories(name)')
+      .order('id', { ascending: false });
+
+    if (error) {
+      console.warn('Ürün listesi alınamadı:', error.message);
+      return [];
+    }
+
+    return (data || []).map((row) => ({
+      ...row,
+      category_name: row.categories?.name || ''
+    }));
+  }
+
+  const { data, error, count } = await supabase
     .from('products')
-    .select('*, categories(name)')
-    .order('id', { ascending: false });
+    .select('*, categories(name)', includeTotal ? { count: 'exact' } : undefined)
+    .order('id', { ascending: false })
+    .range(offset, offset + limit - 1);
 
   if (error) {
     console.warn('Ürün listesi alınamadı:', error.message);
-    return [];
+    return includeTotal ? { products: [], total: 0 } : [];
   }
 
-  return (data || []).map((row) => ({
+  const products = (data || []).map((row) => ({
     ...row,
     category_name: row.categories?.name || ''
   }));
+
+  return includeTotal ? { products, total: count || 0 } : products;
 }
 
 async function logQrScan() {

@@ -33,7 +33,7 @@
         </label>
         <% if (product.image_path) { %>
           <div class="image-preview">
-            <img src="<%= product.image_path %>" alt="<%= product.name %>" />
+            <img src="<%= product.image_path %>" alt="<%= product.name %>" loading="lazy" decoding="async" />
             <label class="checkbox">
               <input type="checkbox" name="removeImage" value="1" />
               Görseli kaldır

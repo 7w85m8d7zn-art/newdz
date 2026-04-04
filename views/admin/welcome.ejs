@@ -68,7 +68,7 @@
         </label>
         <% if (settings.background_image) { %>
           <div class="image-preview">
-            <img src="<%= settings.background_image %>" alt="Arkaplan" />
+            <img src="<%= settings.background_image %>" alt="Arkaplan" loading="lazy" decoding="async" />
             <label class="switch">
               <input type="checkbox" name="remove_background" value="1" data-confirm="Arkaplan görseli kaldırılsın mı?" />
               <span class="switch-ui"></span>
@@ -83,7 +83,7 @@
         </label>
         <% if (settings.logo_image) { %>
           <div class="image-preview">
-            <img src="<%= settings.logo_image %>" alt="Logo" />
+            <img src="<%= settings.logo_image %>" alt="Logo" loading="lazy" decoding="async" />
             <label class="switch">
               <input type="checkbox" name="remove_logo" value="1" data-confirm="Logo görseli kaldırılsın mı?" />
               <span class="switch-ui"></span>
