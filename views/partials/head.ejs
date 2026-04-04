@@ -4,6 +4,19 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title><%= pageTitle %> | QR Menü</title>
+  <% const bodyClassSafe = typeof bodyClass !== 'undefined' ? bodyClass : ''; %>
+  <% if (bodyClassSafe.includes('home-body')) { %>
+    <meta name="theme-color" content="#0f0f0f" />
+    <style>
+      html, body { background-color: #0f0f0f; }
+    </style>
+  <% } %>
+  <% if (bodyClassSafe.includes('login-body')) { %>
+    <meta name="theme-color" content="#0b0b0f" />
+    <style>
+      html, body { background-color: #0b0b0f; }
+    </style>
+  <% } %>
   <% if (typeof preconnectOrigins !== 'undefined' && Array.isArray(preconnectOrigins)) { %>
     <% preconnectOrigins.forEach((origin) => { %>
       <link rel="preconnect" href="<%= origin %>" crossorigin />
