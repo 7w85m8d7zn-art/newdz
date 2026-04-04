@@ -8,7 +8,8 @@ const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE
 const supabaseServiceKey =
   process.env.SUPABASE_SERVICE_ROLE_KEY ||
   process.env.SUPABASE_SERVICE_ROLE ||
-  process.env.SUPABASE_SECRET_KEY;
+  process.env.SUPABASE_SECRET_KEY ||
+  process.env.SUPABASE_ANON_KEY;
 const seedDefaultCategories = process.env.SEED_DEFAULT_CATEGORIES === 'true';
 
 const useSupabase = Boolean(supabaseUrl && supabaseServiceKey);
@@ -18,6 +19,10 @@ if (useSupabase) {
   supabase = createClient(supabaseUrl, supabaseServiceKey, {
     auth: { persistSession: false }
   });
+
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY && process.env.SUPABASE_ANON_KEY) {
+    console.warn('Uyarı: Service role anahtarı bulunamadı, anon anahtar kullanılıyor.');
+  }
 }
 
 const defaultSettings = {
@@ -210,6 +215,17 @@ let seededCategories = false;
 async function ensureDefaultCategories() {
   if (!useSupabase || seededCategories || !seedDefaultCategories) return;
 
+  const { data: seededRow, error: seededError } = await supabase
+    .from('settings')
+    .select('value')
+    .eq('key', 'seeded_categories')
+    .maybeSingle();
+
+  if (!seededError && seededRow?.value === 'true') {
+    seededCategories = true;
+    return;
+  }
+
   const { count, error } = await supabase
     .from('categories')
     .select('id', { count: 'exact', head: true });
@@ -231,6 +247,13 @@ async function ensureDefaultCategories() {
     if (insertError) {
       console.warn('Varsayılan kategoriler eklenemedi:', insertError.message);
     }
+  }
+
+  const { error: seedFlagError } = await supabase
+    .from('settings')
+    .upsert({ key: 'seeded_categories', value: 'true' }, { onConflict: 'key' });
+  if (seedFlagError) {
+    console.warn('Seed bayrağı yazılamadı:', seedFlagError.message);
   }
 
   seededCategories = true;
