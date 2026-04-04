@@ -13,6 +13,12 @@ const PORT = process.env.PORT || 3000;
 const ADMIN_USER = process.env.ADMIN_USER || 'admin';
 const ADMIN_PASS = process.env.ADMIN_PASS || 'admin123';
 
+const buildNoticeUrl = (path, message) => {
+  if (!message) return path;
+  const params = new URLSearchParams({ notice: message });
+  return `${path}?${params.toString()}`;
+};
+
 const isVercel = Boolean(process.env.VERCEL);
 const uploadsDir =
   process.env.UPLOADS_DIR ||
@@ -274,7 +280,7 @@ app.post(
     background_image: backgroundImage,
     logo_image: logoImage
   });
-  res.redirect('/admin/welcome?updated=1');
+  res.redirect(buildNoticeUrl('/admin/welcome', 'Ana sayfa içeriği güncellendi.'));
 });
 
 app.get('/admin/categories', async (req, res) => {
@@ -290,12 +296,17 @@ app.post('/admin/categories', async (req, res) => {
   if (name) {
     await db.addCategory(name);
   }
-  res.redirect('/admin/categories?updated=1');
+  const message = name ? `Kategori oluşturuldu: ${name}` : 'Değişiklikler yapıldı.';
+  res.redirect(buildNoticeUrl('/admin/categories', message));
 });
 
 app.post('/admin/categories/:id/delete', async (req, res) => {
-  await db.deleteCategory(Number(req.params.id));
-  res.redirect('/admin/categories?updated=1');
+  const id = Number(req.params.id);
+  const categories = await db.getCategories();
+  const target = categories.find((category) => category.id === id);
+  await db.deleteCategory(id);
+  const message = target?.name ? `Kategori silindi: ${target.name}` : 'Kategori silindi.';
+  res.redirect(buildNoticeUrl('/admin/categories', message));
 });
 
 app.get('/admin/products', async (req, res) => {
@@ -310,8 +321,11 @@ app.get('/admin/products', async (req, res) => {
 
 app.post('/admin/products', upload.single('image'), async (req, res) => {
   const { categoryId, name, description, price } = req.body;
+  let noticeMessage = 'Değişiklikler yapıldı.';
   if (categoryId && name?.trim()) {
     const imagePath = req.file ? `/uploads/${req.file.filename}` : null;
+    const categories = await db.getCategories();
+    const categoryName = categories.find((category) => category.id === Number(categoryId))?.name;
     await db.addProduct({
       categoryId: Number(categoryId),
       name: name.trim(),
@@ -319,8 +333,13 @@ app.post('/admin/products', upload.single('image'), async (req, res) => {
       price: price?.trim() || null,
       imagePath
     });
+    if (categoryName) {
+      noticeMessage = `${categoryName} - ${name.trim()} oluşturuldu.`;
+    } else {
+      noticeMessage = `Ürün oluşturuldu: ${name.trim()}`;
+    }
   }
-  res.redirect('/admin/products?updated=1');
+  res.redirect(buildNoticeUrl('/admin/products', noticeMessage));
 });
 
 app.get('/admin/products/:id/edit', async (req, res) => {
@@ -367,7 +386,8 @@ app.post('/admin/products/:id/edit', upload.single('image'), async (req, res) =>
       imagePath
     });
   }
-  res.redirect('/admin/products?updated=1');
+  const message = name?.trim() ? `Ürün güncellendi: ${name.trim()}` : 'Değişiklikler yapıldı.';
+  res.redirect(buildNoticeUrl('/admin/products', message));
 });
 
 app.post('/admin/products/:id/delete', async (req, res) => {
@@ -377,7 +397,8 @@ app.post('/admin/products/:id/delete', async (req, res) => {
     deleteUploadedFile(existing.image_path);
   }
   await db.deleteProduct(id);
-  res.redirect('/admin/products?updated=1');
+  const message = existing?.name ? `Ürün silindi: ${existing.name}` : 'Ürün silindi.';
+  res.redirect(buildNoticeUrl('/admin/products', message));
 });
 
 app.get('/admin/qr', async (req, res) => {

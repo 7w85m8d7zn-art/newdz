@@ -6,6 +6,8 @@
     </div>
   </footer>
 
+  <div class="toast-container" id="toast-container" aria-live="polite" aria-atomic="true"></div>
+
   <div class="confirm-modal" id="confirm-modal" aria-hidden="true">
     <div class="confirm-backdrop" data-confirm-close></div>
     <div class="confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
@@ -28,6 +30,7 @@
       const closeTargets = modal.querySelectorAll('[data-confirm-close]');
       let pendingAction = null;
       let pendingCancel = null;
+      const toastContainer = document.getElementById('toast-container');
 
       const openModal = (options) => {
         const config = options || {};
@@ -49,6 +52,30 @@
         modal.setAttribute('aria-hidden', 'true');
         pendingAction = null;
         pendingCancel = null;
+      };
+
+      const showToast = (message, options) => {
+        if (!message) return;
+        if (!toastContainer) {
+          alert(message);
+          return;
+        }
+        const config = options || {};
+        const toast = document.createElement('div');
+        toast.className = `toast ${config.type || 'success'}`;
+        toast.textContent = message;
+        toastContainer.appendChild(toast);
+        requestAnimationFrame(() => toast.classList.add('is-visible'));
+        const duration = typeof config.duration === 'number' ? config.duration : 5000;
+        const dismiss = () => {
+          toast.classList.remove('is-visible');
+          setTimeout(() => toast.remove(), 250);
+        };
+        const timeoutId = setTimeout(dismiss, duration);
+        toast.addEventListener('click', () => {
+          clearTimeout(timeoutId);
+          dismiss();
+        });
       };
 
       document.addEventListener('submit', (event) => {
@@ -121,11 +148,7 @@
       });
 
       window.appAlert = (message) => {
-        openModal({
-          message: message || 'Bilgi',
-          confirmText: 'Tamam',
-          showCancel: false
-        });
+        showToast(message || 'Bilgi');
       };
 
       window.appConfirm = (message, onConfirm, onCancel) => {
@@ -138,9 +161,18 @@
       };
 
       const params = new URLSearchParams(window.location.search);
-      if (params.get('updated') === '1') {
-        window.appAlert('Güncelleme yapıldı, tekrar sisteme dönüyorsunuz.');
+      const notice = params.get('notice');
+      let shouldClean = false;
+      if (notice) {
+        window.appAlert(notice);
+        params.delete('notice');
+        shouldClean = true;
+      } else if (params.get('updated') === '1') {
+        window.appAlert('Değişiklikler yapıldı.');
         params.delete('updated');
+        shouldClean = true;
+      }
+      if (shouldClean) {
         const nextUrl = params.toString()
           ? `${window.location.pathname}?${params.toString()}`
           : window.location.pathname;
