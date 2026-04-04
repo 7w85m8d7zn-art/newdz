@@ -2,8 +2,8 @@ require('dotenv').config({ override: true });
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const crypto = require('crypto');
 const express = require('express');
-const session = require('express-session');
 const compression = require('compression');
 const multer = require('multer');
 const QRCode = require('qrcode');
@@ -14,6 +14,8 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const ADMIN_USER = process.env.ADMIN_USER || 'admin';
 const ADMIN_PASS = process.env.ADMIN_PASS || 'admin123';
+const SESSION_SECRET = process.env.SESSION_SECRET || 'qr-menu-secret';
+const SESSION_TTL_MS = Number(process.env.ADMIN_SESSION_TTL_MS || 1000 * 60 * 60 * 24 * 30);
 
 const buildNoticeUrl = (path, message) => {
   if (!message) return path;
@@ -82,16 +84,6 @@ app.set('views', path.join(__dirname, 'views'));
 
 app.use(compression());
 app.use(express.urlencoded({ extended: true }));
-app.use(
-  session({
-    secret: process.env.SESSION_SECRET || 'qr-menu-secret',
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      maxAge: 1000 * 60 * 60 * 8
-    }
-  })
-);
 app.use(express.static(path.join(__dirname, 'public'), { maxAge: '1h' }));
 app.use('/uploads', express.static(uploadsDir, { maxAge: '5m' }));
 
@@ -219,8 +211,75 @@ const deleteUploadedFile = async (imagePath) => {
   }
 };
 
+const parseCookies = (cookieHeader = '') =>
+  cookieHeader.split(';').reduce((acc, part) => {
+    const [rawKey, ...rest] = part.trim().split('=');
+    if (!rawKey) return acc;
+    const key = rawKey.trim();
+    const value = rest.join('=');
+    acc[key] = decodeURIComponent(value);
+    return acc;
+  }, {});
+
+const signValue = (value) =>
+  crypto.createHmac('sha256', SESSION_SECRET).update(value).digest('base64url');
+
+const createAdminToken = () => {
+  const payload = JSON.stringify({ u: ADMIN_USER, exp: Date.now() + SESSION_TTL_MS });
+  const base = Buffer.from(payload).toString('base64url');
+  const sig = signValue(base);
+  return `${base}.${sig}`;
+};
+
+const verifyAdminToken = (token) => {
+  if (!token || typeof token !== 'string') return null;
+  const [base, sig] = token.split('.');
+  if (!base || !sig) return null;
+  const expected = signValue(base);
+  if (expected !== sig) return null;
+  try {
+    const payload = JSON.parse(Buffer.from(base, 'base64url').toString('utf8'));
+    if (!payload || payload.u !== ADMIN_USER) return null;
+    if (payload.exp && Date.now() > payload.exp) return null;
+    return payload;
+  } catch (err) {
+    return null;
+  }
+};
+
+const setAdminCookie = (res) => {
+  const token = createAdminToken();
+  res.cookie('admin_session', token, {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: isVercel,
+    maxAge: SESSION_TTL_MS,
+    path: '/'
+  });
+};
+
+const clearAdminCookie = (res) => {
+  res.cookie('admin_session', '', {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: isVercel,
+    maxAge: 0,
+    path: '/'
+  });
+};
+
+app.use((req, res, next) => {
+  const cookies = parseCookies(req.headers.cookie || '');
+  const token = cookies.admin_session;
+  const payload = verifyAdminToken(token);
+  if (payload) {
+    req.isAdmin = true;
+  }
+  return next();
+});
+
 function requireAdmin(req, res, next) {
-  if (req.session?.isAdmin) {
+  if (req.isAdmin) {
     return next();
   }
   return res.redirect('/login');
@@ -307,7 +366,7 @@ app.get('/qr', async (req, res) => {
 });
 
 app.get('/login', (req, res) => {
-  if (req.session?.isAdmin) {
+  if (req.isAdmin) {
     return res.redirect('/admin');
   }
   res.render('admin/login', { pageTitle: 'Admin Girişi', error: null });
@@ -317,7 +376,7 @@ app.post('/login', (req, res) => {
   const username = req.body.username?.trim();
   const password = req.body.password?.trim();
   if (username === ADMIN_USER && password === ADMIN_PASS) {
-    req.session.isAdmin = true;
+    setAdminCookie(res);
     return res.redirect('/admin');
   }
   return res.status(401).render('admin/login', {
@@ -331,9 +390,8 @@ app.get('/admin/login', (req, res) => {
 });
 
 app.post('/admin/logout', requireAdmin, (req, res) => {
-  req.session.destroy(() => {
-    res.redirect('/login');
-  });
+  clearAdminCookie(res);
+  res.redirect('/login');
 });
 
 app.use('/admin', requireAdmin);
