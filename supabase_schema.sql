@@ -20,6 +20,7 @@ create table if not exists products (
   description text,
   price text,
   image_path text,
+  sort_order integer not null default 0,
   active boolean not null default true
 );
 

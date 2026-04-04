@@ -83,6 +83,7 @@ app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
 app.use(compression());
+app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public'), { maxAge: '1h' }));
 app.use('/uploads', express.static(uploadsDir, { maxAge: '5m' }));
@@ -555,6 +556,16 @@ app.post('/admin/products', upload.single('image'), async (req, res) => {
     }
   }
   res.redirect(buildNoticeUrl('/admin/products', noticeMessage));
+});
+
+app.post('/admin/products/reorder', requireAdmin, async (req, res) => {
+  const order = Array.isArray(req.body.order) ? req.body.order : [];
+  const offset = Math.max(0, Number(req.body.offset) || 0);
+  if (order.length === 0) {
+    return res.status(400).json({ ok: false });
+  }
+  await db.updateProductOrder(order, offset);
+  return res.json({ ok: true });
 });
 
 app.get('/admin/products/:id/edit', async (req, res) => {

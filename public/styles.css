@@ -743,6 +743,7 @@ img {
   color: var(--raspberry);
   white-space: nowrap;
   align-self: flex-end;
+  font-size: 1.1rem;
 }
 
 .empty-state {
@@ -1602,6 +1603,34 @@ body.admin-body .admin-section .form .btn:hover {
   border: 1px solid rgba(47, 31, 23, 0.08);
   align-items: center;
   box-shadow: 0 10px 20px rgba(47, 31, 23, 0.08);
+}
+
+.product-row {
+  cursor: grab;
+}
+
+.product-row.dragging {
+  opacity: 0.6;
+}
+
+.product-title {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.drag-handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 10px;
+  border: 1px dashed rgba(47, 31, 23, 0.2);
+  color: #a69e98;
+  font-size: 1.1rem;
+  user-select: none;
+  cursor: grab;
 }
 
 .table-head {

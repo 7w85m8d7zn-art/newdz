@@ -152,6 +152,17 @@ function initSqlite() {
     sqlite.exec('ALTER TABLE products ADD COLUMN image_path TEXT');
   }
 
+  const hasSortOrder = productColumns.some((column) => column.name === 'sort_order');
+  if (!hasSortOrder) {
+    sqlite.exec('ALTER TABLE products ADD COLUMN sort_order INTEGER DEFAULT 0');
+  }
+
+  const hasSortValues = sqlite.prepare('SELECT COUNT(*) AS count FROM products WHERE sort_order IS NOT NULL AND sort_order != 0').get().count;
+  if (!hasSortValues) {
+    const maxId = sqlite.prepare('SELECT MAX(id) AS max FROM products').get().max || 0;
+    sqlite.prepare('UPDATE products SET sort_order = (? - id) + 1').run(maxId);
+  }
+
   // Update legacy ASCII settings values if unchanged by user
   const legacySettings = [
     { key: 'welcome_title', from: 'Dondurmaci Zeki', to: 'Dondurmacı Zeki' },
@@ -396,9 +407,10 @@ async function deleteCategory(id) {
 }
 
 async function addProduct({ categoryId, name, description, price, imagePath }) {
+  const sortOrder = await getNextProductSortOrder();
   if (!useSupabase) {
-    const insert = sqlite.prepare('INSERT INTO products (category_id, name, description, price, image_path) VALUES (?, ?, ?, ?, ?)');
-    insert.run(categoryId, name, description || null, price || null, imagePath || null);
+    const insert = sqlite.prepare('INSERT INTO products (category_id, name, description, price, image_path, sort_order) VALUES (?, ?, ?, ?, ?, ?)');
+    insert.run(categoryId, name, description || null, price || null, imagePath || null, sortOrder);
     return;
   }
 
@@ -408,6 +420,7 @@ async function addProduct({ categoryId, name, description, price, imagePath }) {
     description: description || null,
     price: price || null,
     image_path: imagePath || null,
+    sort_order: sortOrder,
     active: true
   });
 
@@ -470,7 +483,7 @@ async function updateProduct({ id, categoryId, name, description, price, imagePa
 
 async function getProductsByCategory(categoryId) {
   if (!useSupabase) {
-    return sqlite.prepare('SELECT * FROM products WHERE category_id = ? AND active = 1 ORDER BY id DESC').all(categoryId);
+    return sqlite.prepare('SELECT * FROM products WHERE category_id = ? AND active = 1 ORDER BY sort_order ASC, id DESC').all(categoryId);
   }
 
   const { data, error } = await supabase
@@ -478,11 +491,22 @@ async function getProductsByCategory(categoryId) {
     .select('*')
     .eq('category_id', categoryId)
     .eq('active', true)
+    .order('sort_order', { ascending: true })
     .order('id', { ascending: false });
 
   if (error) {
-    console.warn('Ürünler alınamadı:', error.message);
-    return [];
+    console.warn('Ürünler alınamadı (sort_order):', error.message);
+    const fallback = await supabase
+      .from('products')
+      .select('*')
+      .eq('category_id', categoryId)
+      .eq('active', true)
+      .order('id', { ascending: false });
+    if (fallback.error) {
+      console.warn('Ürünler alınamadı:', fallback.error.message);
+      return [];
+    }
+    return fallback.data || [];
   }
   return data || [];
 }
@@ -498,7 +522,7 @@ async function getAllProducts(options = {}) {
         SELECT products.*, categories.name AS category_name
         FROM products
         JOIN categories ON categories.id = products.category_id
-        ORDER BY products.id DESC
+        ORDER BY products.sort_order ASC, products.id DESC
       `).all();
     }
 
@@ -506,7 +530,7 @@ async function getAllProducts(options = {}) {
       SELECT products.*, categories.name AS category_name
       FROM products
       JOIN categories ON categories.id = products.category_id
-      ORDER BY products.id DESC
+      ORDER BY products.sort_order ASC, products.id DESC
       LIMIT ? OFFSET ?
     `).all(limit, offset);
 
@@ -522,11 +546,23 @@ async function getAllProducts(options = {}) {
     const { data, error } = await supabase
       .from('products')
       .select('*, categories(name)')
+      .order('sort_order', { ascending: true })
       .order('id', { ascending: false });
 
     if (error) {
-      console.warn('Ürün listesi alınamadı:', error.message);
-      return [];
+      console.warn('Ürün listesi alınamadı (sort_order):', error.message);
+      const fallback = await supabase
+        .from('products')
+        .select('*, categories(name)')
+        .order('id', { ascending: false });
+      if (fallback.error) {
+        console.warn('Ürün listesi alınamadı:', fallback.error.message);
+        return [];
+      }
+      return (fallback.data || []).map((row) => ({
+        ...row,
+        category_name: row.categories?.name || ''
+      }));
     }
 
     return (data || []).map((row) => ({
@@ -538,12 +574,26 @@ async function getAllProducts(options = {}) {
   const { data, error, count } = await supabase
     .from('products')
     .select('*, categories(name)', includeTotal ? { count: 'exact' } : undefined)
+    .order('sort_order', { ascending: true })
     .order('id', { ascending: false })
     .range(offset, offset + limit - 1);
 
   if (error) {
-    console.warn('Ürün listesi alınamadı:', error.message);
-    return includeTotal ? { products: [], total: 0 } : [];
+    console.warn('Ürün listesi alınamadı (sort_order):', error.message);
+    const fallback = await supabase
+      .from('products')
+      .select('*, categories(name)', includeTotal ? { count: 'exact' } : undefined)
+      .order('id', { ascending: false })
+      .range(offset, offset + limit - 1);
+    if (fallback.error) {
+      console.warn('Ürün listesi alınamadı:', fallback.error.message);
+      return includeTotal ? { products: [], total: 0 } : [];
+    }
+    const products = (fallback.data || []).map((row) => ({
+      ...row,
+      category_name: row.categories?.name || ''
+    }));
+    return includeTotal ? { products, total: fallback.count || 0 } : products;
   }
 
   const products = (data || []).map((row) => ({
@@ -552,6 +602,53 @@ async function getAllProducts(options = {}) {
   }));
 
   return includeTotal ? { products, total: count || 0 } : products;
+}
+
+async function getNextProductSortOrder() {
+  if (!useSupabase) {
+    const row = sqlite.prepare('SELECT MIN(sort_order) AS min FROM products').get();
+    if (!row || row.min === null || typeof row.min === 'undefined') {
+      return 1;
+    }
+    return Number(row.min) - 1;
+  }
+
+  const { data, error } = await supabase
+    .from('products')
+    .select('sort_order')
+    .order('sort_order', { ascending: true })
+    .limit(1);
+
+  if (error) {
+    console.warn('Sort sırası alınamadı:', error.message);
+    return Date.now();
+  }
+
+  const min = data && data[0] ? Number(data[0].sort_order || 0) : 0;
+  return min - 1;
+}
+
+async function updateProductOrder(ids, offset = 0) {
+  if (!Array.isArray(ids) || ids.length === 0) return;
+  const normalizedOffset = Number.isFinite(offset) ? offset : 0;
+  const updates = ids.map((id, index) => ({
+    id: Number(id),
+    sort_order: normalizedOffset + index + 1
+  }));
+
+  if (!useSupabase) {
+    const update = sqlite.prepare('UPDATE products SET sort_order = ? WHERE id = ?');
+    const transaction = sqlite.transaction((rows) => {
+      rows.forEach((row) => update.run(row.sort_order, row.id));
+    });
+    transaction(updates);
+    return;
+  }
+
+  const { error } = await supabase.from('products').upsert(updates, { onConflict: 'id' });
+  if (error) {
+    console.warn('Ürün sırası güncellenemedi:', error.message);
+  }
 }
 
 async function logQrScan() {
@@ -657,6 +754,7 @@ module.exports = {
   updateProduct,
   getProductsByCategory,
   getAllProducts,
+  updateProductOrder,
   logQrScan,
   getScanStats,
   getCatalogStats

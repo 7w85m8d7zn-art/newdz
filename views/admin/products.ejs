@@ -37,7 +37,7 @@
     </section>
 
     <section class="admin-section">
-      <div class="table">
+      <div class="table products-table" data-offset="<%= (page - 1) * pageSize %>">
         <div class="table-row table-head">
           <div>Ürün</div>
           <div>Kategori</div>
@@ -53,9 +53,12 @@
           </div>
         <% } %>
         <% products.forEach((product) => { %>
-          <div class="table-row">
+          <div class="table-row product-row" data-product-id="<%= product.id %>">
             <div>
-              <strong><%= product.name %></strong>
+              <div class="product-title">
+                <span class="drag-handle" data-drag-handle title="Sürükle">↕</span>
+                <strong><%= product.name %></strong>
+              </div>
               <% if (product.image_path) { %>
                 <div class="thumb-wrap">
                   <img class="thumb" src="<%= product.image_path %>" alt="<%= product.name %>" loading="lazy" decoding="async" />
@@ -89,5 +92,81 @@
     <% } %>
   </div>
 </div>
+
+<script>
+  (function () {
+    const table = document.querySelector('.products-table');
+    if (!table) return;
+    const rows = Array.from(table.querySelectorAll('.product-row'));
+    if (rows.length < 2) return;
+
+    let draggingRow = null;
+
+    const getDragAfterElement = (container, y) => {
+      const elements = [...container.querySelectorAll('.product-row:not(.dragging)')];
+      return elements.reduce(
+        (closest, child) => {
+          const box = child.getBoundingClientRect();
+          const offset = y - box.top - box.height / 2;
+          if (offset < 0 && offset > closest.offset) {
+            return { offset, element: child };
+          }
+          return closest;
+        },
+        { offset: Number.NEGATIVE_INFINITY, element: null }
+      ).element;
+    };
+
+    const saveOrder = async () => {
+      const ids = Array.from(table.querySelectorAll('.product-row')).map((row) => row.dataset.productId);
+      if (!ids.length) return;
+      try {
+        const res = await fetch('/admin/products/reorder', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            order: ids,
+            offset: Number(table.dataset.offset || 0)
+          })
+        });
+        if (!res.ok) throw new Error('Request failed');
+        if (window.appAlert) {
+          window.appAlert('Sıralama güncellendi.');
+        }
+      } catch (err) {
+        if (window.appAlert) {
+          window.appAlert('Sıralama kaydedilemedi.');
+        }
+      }
+    };
+
+    table.addEventListener('dragover', (event) => {
+      if (!draggingRow) return;
+      event.preventDefault();
+      const after = getDragAfterElement(table, event.clientY);
+      if (!after) {
+        table.appendChild(draggingRow);
+      } else {
+        table.insertBefore(draggingRow, after);
+      }
+    });
+
+    rows.forEach((row) => {
+      const handle = row.querySelector('[data-drag-handle]');
+      if (!handle) return;
+      handle.setAttribute('draggable', 'true');
+      handle.addEventListener('dragstart', (event) => {
+        draggingRow = row;
+        row.classList.add('dragging');
+        event.dataTransfer.effectAllowed = 'move';
+      });
+      handle.addEventListener('dragend', () => {
+        row.classList.remove('dragging');
+        draggingRow = null;
+        saveOrder();
+      });
+    });
+  })();
+</script>
 
 <%- include('../partials/footer') %>
