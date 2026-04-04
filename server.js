@@ -79,6 +79,8 @@ const upload = multer({
 
 const ADMIN_PAGE_SIZE = Math.min(50, Math.max(10, Number(process.env.ADMIN_PAGE_SIZE || 20)));
 const MENU_ITEMS_PER_CATEGORY = Math.min(20, Math.max(4, Number(process.env.MENU_ITEMS_PER_CATEGORY || 8)));
+const MENU_CACHE_TTL_MS = Number(process.env.MENU_CACHE_TTL_MS ?? (isVercel ? 0 : 20000));
+const SETTINGS_CACHE_TTL_MS = Number(process.env.SETTINGS_CACHE_TTL_MS ?? (isVercel ? 0 : 5000));
 
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
@@ -156,6 +158,9 @@ const cacheStore = {
 };
 
 const getCached = async (key, ttlMs, fetcher) => {
+  if (!ttlMs || ttlMs <= 0) {
+    return fetcher();
+  }
   const now = Date.now();
   const entry = cacheStore[key];
   if (entry?.value && entry.expires > now) {
@@ -194,15 +199,18 @@ const getCachedQr = async (targetUrl) => {
 };
 
 const getCachedMenuCategories = async () =>
-  getCached('menuCategories', 20000, async () => db.getCategories());
+  getCached('menuCategories', MENU_CACHE_TTL_MS, async () => db.getCategories());
 
 const getCachedMenuProducts = async (categoryId, limit) => {
+  if (!MENU_CACHE_TTL_MS || MENU_CACHE_TTL_MS <= 0) {
+    return db.getProductsByCategory(categoryId, limit ? { limit } : {});
+  }
   const now = Date.now();
   const key = `${categoryId}:${limit || 'all'}`;
   const entry = cacheStore.menuProducts.get(key);
   if (entry && entry.expires > now) return entry.data;
   const data = await db.getProductsByCategory(categoryId, limit ? { limit } : {});
-  cacheStore.menuProducts.set(key, { data, expires: now + 20000 });
+  cacheStore.menuProducts.set(key, { data, expires: now + MENU_CACHE_TTL_MS });
   return data;
 };
 
@@ -308,8 +316,9 @@ function requireAdmin(req, res, next) {
 }
 
 app.get('/', async (req, res) => {
-  const settings = await getCached('settings', 5000, () => db.getSettings());
+  const settings = await getCached('settings', SETTINGS_CACHE_TTL_MS, () => db.getSettings());
   const pageTitle = settings.hero_title || settings.welcome_title;
+  res.set('Cache-Control', 'no-store');
   const preloadImages = [settings.background_image, settings.logo_image].filter(Boolean);
   const preconnectOrigins = Array.from(
     new Set(
@@ -328,6 +337,7 @@ app.get('/', async (req, res) => {
 });
 
 app.get('/menus', async (req, res) => {
+  res.set('Cache-Control', 'no-store');
   const categories = await getCachedMenuCategories();
   const selectedSlug = req.query.kategori;
 
