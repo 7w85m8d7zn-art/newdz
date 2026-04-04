@@ -1,6 +1,7 @@
 require('dotenv').config({ override: true });
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 const express = require('express');
 const session = require('express-session');
 const multer = require('multer');
@@ -12,25 +13,39 @@ const PORT = process.env.PORT || 3000;
 const ADMIN_USER = process.env.ADMIN_USER || 'admin';
 const ADMIN_PASS = process.env.ADMIN_PASS || 'admin123';
 
-const uploadsDir = path.join(__dirname, 'public', 'uploads');
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
+const isVercel = Boolean(process.env.VERCEL);
+const uploadsDir =
+  process.env.UPLOADS_DIR ||
+  (isVercel ? path.join(os.tmpdir(), 'uploads') : path.join(__dirname, 'public', 'uploads'));
+let uploadsEnabled = true;
+try {
+  if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+  }
+} catch (error) {
+  uploadsEnabled = false;
+  console.warn('Yükleme klasörü oluşturulamadı, dosya yüklemeleri devre dışı:', error.message);
 }
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, uploadsDir),
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname).toLowerCase() || '.jpg';
-    const safeName = `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
-    cb(null, safeName);
-  }
-});
+const storage = uploadsEnabled
+  ? multer.diskStorage({
+      destination: (req, file, cb) => cb(null, uploadsDir),
+      filename: (req, file, cb) => {
+        const ext = path.extname(file.originalname).toLowerCase() || '.jpg';
+        const safeName = `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
+        cb(null, safeName);
+      }
+    })
+  : multer.memoryStorage();
 
 const MAX_UPLOAD_MB = Number(process.env.MAX_UPLOAD_MB || 8);
 const upload = multer({
   storage,
   limits: { fileSize: MAX_UPLOAD_MB * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
+    if (!uploadsEnabled) {
+      return cb(new Error('Dosya yükleme devre dışı (salt-okunur dosya sistemi).'));
+    }
     if (file.mimetype && file.mimetype.startsWith('image/')) {
       return cb(null, true);
     }
@@ -53,6 +68,7 @@ app.use(
   })
 );
 app.use(express.static(path.join(__dirname, 'public')));
+app.use('/uploads', express.static(uploadsDir));
 
 function requireAdmin(req, res, next) {
   if (req.session?.isAdmin) {
@@ -62,9 +78,10 @@ function requireAdmin(req, res, next) {
 }
 
 function deleteUploadedFile(imagePath) {
+  if (!uploadsEnabled) return;
   if (!imagePath || !imagePath.startsWith('/uploads/')) return;
-  const relativePath = imagePath.replace(/^\/+/, '');
-  const filePath = path.join(__dirname, 'public', relativePath);
+  const relativePath = imagePath.replace(/^\/uploads\//, '');
+  const filePath = path.join(uploadsDir, relativePath);
   try {
     if (fs.existsSync(filePath)) {
       fs.unlinkSync(filePath);

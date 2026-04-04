@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 const Database = require('better-sqlite3');
 const { createClient } = require('@supabase/supabase-js');
 
@@ -78,7 +79,11 @@ function initSqlite() {
     fs.mkdirSync(dataDir, { recursive: true });
   }
 
-  const dbPath = process.env.DB_PATH || path.join(dataDir, 'app.db');
+  const isVercel = Boolean(process.env.VERCEL);
+  const defaultDbPath = isVercel
+    ? path.join(os.tmpdir(), 'app.db')
+    : path.join(dataDir, 'app.db');
+  const dbPath = process.env.DB_PATH || defaultDbPath;
   sqlite = new Database(dbPath);
 
   sqlite.pragma('journal_mode = WAL');
