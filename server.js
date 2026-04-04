@@ -4,6 +4,7 @@ const path = require('path');
 const os = require('os');
 const express = require('express');
 const session = require('express-session');
+const compression = require('compression');
 const multer = require('multer');
 const QRCode = require('qrcode');
 const { createClient } = require('@supabase/supabase-js');
@@ -77,6 +78,7 @@ const upload = multer({
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
+app.use(compression());
 app.use(express.urlencoded({ extended: true }));
 app.use(
   session({
@@ -88,8 +90,8 @@ app.use(
     }
   })
 );
-app.use(express.static(path.join(__dirname, 'public')));
-app.use('/uploads', express.static(uploadsDir));
+app.use(express.static(path.join(__dirname, 'public'), { maxAge: '1h' }));
+app.use('/uploads', express.static(uploadsDir, { maxAge: '5m' }));
 
 let storageReadyPromise = null;
 const ensureStorageBucket = async () => {
@@ -149,6 +151,45 @@ const uploadImage = async (file, folder) => {
   return data?.publicUrl || null;
 };
 
+const cacheStore = {
+  settings: { value: null, expires: 0 },
+  stats: { value: null, expires: 0 },
+  qr: new Map()
+};
+
+const getCached = async (key, ttlMs, fetcher) => {
+  const now = Date.now();
+  const entry = cacheStore[key];
+  if (entry?.value && entry.expires > now) {
+    return entry.value;
+  }
+  const value = await fetcher();
+  cacheStore[key] = { value, expires: now + ttlMs };
+  return value;
+};
+
+const invalidateCache = (key) => {
+  if (!key || !cacheStore[key]) return;
+  cacheStore[key] = { value: null, expires: 0 };
+};
+
+const getCachedStats = async () =>
+  getCached('stats', 15000, async () => {
+    const stats = await db.getScanStats();
+    const sevenTotal = stats.recent.reduce((sum, item) => sum + item.count, 0);
+    const catalog = await db.getCatalogStats();
+    return { ...stats, sevenTotal, catalog };
+  });
+
+const getCachedQr = async (targetUrl) => {
+  const now = Date.now();
+  const entry = cacheStore.qr.get(targetUrl);
+  if (entry && entry.expires > now) return entry.data;
+  const data = await QRCode.toDataURL(targetUrl, { margin: 1, width: 240 });
+  cacheStore.qr.set(targetUrl, { data, expires: now + 5 * 60 * 1000 });
+  return data;
+};
+
 const deleteUploadedFile = async (imagePath) => {
   if (!imagePath) return;
   if (storageEnabled) {
@@ -184,7 +225,7 @@ function requireAdmin(req, res, next) {
 }
 
 app.get('/', async (req, res) => {
-  const settings = await db.getSettings();
+  const settings = await getCached('settings', 5000, () => db.getSettings());
   const pageTitle = settings.hero_title || settings.welcome_title;
   res.render('home', { pageTitle, settings });
 });
@@ -282,14 +323,13 @@ app.post('/admin/logout', requireAdmin, (req, res) => {
 app.use('/admin', requireAdmin);
 
 app.get('/admin', async (req, res) => {
-  const stats = await db.getScanStats();
-  const catalog = await db.getCatalogStats();
+  const { total, today, recent, sevenTotal, catalog } = await getCachedStats();
   const now = new Date();
   const timeLabel = now.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
   const dateLabel = now.toLocaleDateString('tr-TR', { day: '2-digit', month: 'long' });
   res.render('admin/index', {
     pageTitle: 'Admin Paneli',
-    stats,
+    stats: { total, today, recent },
     catalog,
     timeLabel,
     dateLabel
@@ -297,14 +337,12 @@ app.get('/admin', async (req, res) => {
 });
 
 app.get('/admin/stats', async (req, res) => {
-  const stats = await db.getScanStats();
-  const sevenTotal = stats.recent.reduce((sum, item) => sum + item.count, 0);
-  const catalog = await db.getCatalogStats();
-  res.json({ ...stats, sevenTotal, catalog });
+  const payload = await getCachedStats();
+  res.json(payload);
 });
 
 app.get('/admin/welcome', async (req, res) => {
-  const settings = await db.getSettings();
+  const settings = await getCached('settings', 5000, () => db.getSettings());
   res.render('admin/welcome', {
     pageTitle: 'Karşılama Sayfası',
     settings
@@ -372,6 +410,7 @@ app.post(
     background_image: backgroundImage,
     logo_image: logoImage
   });
+  invalidateCache('settings');
   res.redirect(buildNoticeUrl('/admin/welcome', 'Ana sayfa içeriği güncellendi.'));
 });
 
@@ -501,10 +540,7 @@ app.get('/admin/qr', async (req, res) => {
   const defaultUrl = `${baseUrl}/qr`;
   const targetUrl = (req.query.url || defaultUrl).toString();
 
-  const qrData = await QRCode.toDataURL(targetUrl, {
-    margin: 1,
-    width: 240
-  });
+  const qrData = await getCachedQr(targetUrl);
 
   res.render('admin/qr', {
     pageTitle: 'QR Kod',
