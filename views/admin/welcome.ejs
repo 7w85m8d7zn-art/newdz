@@ -64,7 +64,7 @@
 
         <label>
           Arkaplan Görseli Yükle (opsiyonel)
-          <input type="file" name="background_image_file" accept="image/*" />
+          <input type="file" name="background_image_file" accept="image/*" data-image-role="background" />
         </label>
         <% if (settings.background_image) { %>
           <div class="image-preview">
@@ -79,7 +79,7 @@
 
         <label>
           Logo Görseli Yükle (opsiyonel)
-          <input type="file" name="logo_image_file" accept="image/*" />
+          <input type="file" name="logo_image_file" accept="image/*" data-image-role="logo" />
         </label>
         <% if (settings.logo_image) { %>
           <div class="image-preview">
@@ -97,5 +97,171 @@
     </section>
   </div>
 </div>
+
+<script>
+  (() => {
+    const form = document.querySelector('.admin-section .form');
+    if (!form) return;
+
+    const getExtForType = (type) => {
+      if (type === 'image/png') return '.png';
+      if (type === 'image/webp') return '.webp';
+      return '.jpg';
+    };
+
+    const loadImage = (file) =>
+      new Promise((resolve, reject) => {
+        const img = new Image();
+        const url = URL.createObjectURL(file);
+        img.onload = () => {
+          URL.revokeObjectURL(url);
+          resolve(img);
+        };
+        img.onerror = (err) => {
+          URL.revokeObjectURL(url);
+          reject(err);
+        };
+        img.src = url;
+      });
+
+    const canvasToBlob = (canvas, type, quality) =>
+      new Promise((resolve) => {
+        canvas.toBlob((blob) => resolve(blob), type, quality);
+      });
+
+    const optimizeImage = async (file, options) => {
+      const img = await loadImage(file);
+      const ratio = Math.min(1, options.maxWidth / img.width, options.maxHeight / img.height);
+      const targetWidth = Math.round(img.width * ratio);
+      const targetHeight = Math.round(img.height * ratio);
+      const canvas = document.createElement('canvas');
+      canvas.width = targetWidth;
+      canvas.height = targetHeight;
+      const ctx = canvas.getContext('2d');
+      if (options.fill) {
+        ctx.fillStyle = options.fill;
+        ctx.fillRect(0, 0, targetWidth, targetHeight);
+      }
+      ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
+
+      let outputType = options.outputType;
+      let quality = options.quality;
+      let blob = await canvasToBlob(canvas, outputType, quality);
+      if (!blob) return { file };
+
+      if (options.maxBytes && blob.size > options.maxBytes && outputType !== 'image/png') {
+        const qualities = [0.72, 0.6, 0.5, 0.4];
+        for (const q of qualities) {
+          blob = await canvasToBlob(canvas, outputType, q);
+          if (blob && blob.size <= options.maxBytes) break;
+        }
+      }
+
+      if (options.maxBytes && blob.size > options.maxBytes && options.allowJpegFallback) {
+        outputType = 'image/jpeg';
+        blob = await canvasToBlob(canvas, outputType, 0.72);
+      }
+
+      if (options.maxBytes && blob.size > options.maxBytes) {
+        return { error: 'Görsel boyutu çok büyük, lütfen daha küçük bir dosya seçin.' };
+      }
+
+      const ext = getExtForType(outputType);
+      const baseName = file.name.replace(/\.[^/.]+$/, '');
+      const optimizedFile = new File([blob], `${baseName}${ext}`, {
+        type: outputType,
+        lastModified: Date.now()
+      });
+      return { file: optimizedFile };
+    };
+
+    const roleConfig = {
+      background: {
+        maxWidth: 1920,
+        maxHeight: 1080,
+        maxBytes: 2000000,
+        outputType: 'image/jpeg',
+        quality: 0.78,
+        fill: '#ffffff',
+        allowJpegFallback: false
+      },
+      logo: {
+        maxWidth: 800,
+        maxHeight: 800,
+        maxBytes: 800000,
+        outputType: 'image/png',
+        quality: 0.9,
+        fill: '#ffffff',
+        allowJpegFallback: true
+      }
+    };
+
+    const setInputFile = (input, file) => {
+      const dt = new DataTransfer();
+      dt.items.add(file);
+      input.files = dt.files;
+    };
+
+    const notify = (message) => {
+      if (window.appAlert) {
+        window.appAlert(message);
+      } else {
+        alert(message);
+      }
+    };
+
+    form.addEventListener('submit', async (event) => {
+      if (form.dataset.optimizing === '1') return;
+
+      const inputs = Array.from(form.querySelectorAll('input[type="file"][data-image-role]'));
+      const filesToProcess = inputs.filter((input) => input.files && input.files.length > 0);
+      if (filesToProcess.length === 0) return;
+
+      event.preventDefault();
+      form.dataset.optimizing = '1';
+      const submitButton = form.querySelector('button[type="submit"]');
+      if (submitButton) {
+        submitButton.disabled = true;
+        submitButton.textContent = 'Görseller optimize ediliyor...';
+      }
+
+      try {
+        for (const input of filesToProcess) {
+          const role = input.dataset.imageRole;
+          const config = roleConfig[role];
+          if (!config) continue;
+
+          const originalFile = input.files[0];
+          if (!originalFile) continue;
+
+          const { file, error } = await optimizeImage(originalFile, config);
+          if (error) {
+            notify(error);
+            form.dataset.optimizing = '';
+            if (submitButton) {
+              submitButton.disabled = false;
+              submitButton.textContent = 'Güncelle';
+            }
+            return;
+          }
+          if (file && file !== originalFile) {
+            setInputFile(input, file);
+          }
+        }
+      } catch (error) {
+        console.error(error);
+        notify('Görsel optimize edilirken bir hata oluştu.');
+        form.dataset.optimizing = '';
+        if (submitButton) {
+          submitButton.disabled = false;
+          submitButton.textContent = 'Güncelle';
+        }
+        return;
+      }
+
+      form.submit();
+    });
+  })();
+</script>
 
 <%- include('../partials/footer') %>
