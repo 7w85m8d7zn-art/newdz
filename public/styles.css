@@ -2391,6 +2391,103 @@ body.admin-body .toast-container {
   }
 }
 
+@media (max-width: 720px) {
+  .home-content {
+    padding: 1.6rem 0.9rem;
+  }
+
+  .home-card {
+    padding: 1.6rem 1.3rem;
+    border-radius: 26px;
+  }
+
+  .home-avatar {
+    width: 78px;
+    height: 78px;
+    margin-bottom: 0.9rem;
+  }
+
+  .home-avatar-inner {
+    width: 54px;
+    height: 54px;
+  }
+
+  .home-title {
+    font-size: clamp(1.9rem, 6.5vw, 2.6rem);
+  }
+
+  .home-slogan {
+    font-size: 0.98rem;
+  }
+
+  .home-pills {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .home-pill {
+    width: 100%;
+  }
+
+  .home-social {
+    gap: 0.7rem;
+  }
+
+  .social-btn {
+    width: 50px;
+    height: 50px;
+  }
+
+  .home-powered {
+    letter-spacing: 0.18em;
+  }
+
+  .home-branch-grid {
+    width: 100%;
+  }
+
+  .branch-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .branch-actions {
+    flex-direction: column;
+  }
+
+  .branch-actions .btn {
+    width: 100%;
+  }
+
+  .section-header {
+    margin: 1.2rem 0 0.8rem;
+    text-align: left;
+  }
+
+  .section-header h1 {
+    font-size: clamp(1.6rem, 6vw, 2.2rem);
+  }
+
+  .menu-section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.4rem;
+  }
+
+  .menu-card {
+    padding: 1.2rem;
+    border-radius: 22px;
+  }
+
+  .product-card {
+    padding: 1rem;
+  }
+
+  .product-image {
+    height: 160px;
+  }
+}
+
 @media (max-width: 900px) {
   body.admin-body .container.page {
     padding-left: 16px;
