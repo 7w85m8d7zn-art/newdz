@@ -229,7 +229,21 @@ function requireAdmin(req, res, next) {
 app.get('/', async (req, res) => {
   const settings = await getCached('settings', 5000, () => db.getSettings());
   const pageTitle = settings.hero_title || settings.welcome_title;
-  res.render('home', { pageTitle, settings });
+  const preloadImages = [settings.background_image, settings.logo_image].filter(Boolean);
+  const preconnectOrigins = Array.from(
+    new Set(
+      preloadImages
+        .map((url) => {
+          try {
+            return new URL(url).origin;
+          } catch (err) {
+            return null;
+          }
+        })
+        .filter(Boolean)
+    )
+  );
+  res.render('home', { pageTitle, settings, preloadImages, preconnectOrigins });
 });
 
 app.get('/menus', async (req, res) => {

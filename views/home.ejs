@@ -13,7 +13,7 @@
         <div class="home-avatar">
           <div class="home-avatar-inner">
             <% if (settings.logo_image) { %>
-              <img src="<%= settings.logo_image %>" alt="Logo" />
+              <img src="<%= settings.logo_image %>" alt="Logo" loading="eager" decoding="async" fetchpriority="high" width="64" height="64" />
             <% } %>
           </div>
         </div>
