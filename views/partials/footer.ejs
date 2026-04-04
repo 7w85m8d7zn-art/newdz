@@ -1,0 +1,176 @@
+  </main>
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <div>QR Menü Sistemi</div>
+      <div>© Ajjans Medya. Tüm hakları saklıdır.</div>
+    </div>
+  </footer>
+
+  <div class="confirm-modal" id="confirm-modal" aria-hidden="true">
+    <div class="confirm-backdrop" data-confirm-close></div>
+    <div class="confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
+      <h3 id="confirm-title">Onay</h3>
+      <p data-confirm-message>Bu işlemi onaylıyor musunuz?</p>
+      <div class="confirm-actions">
+        <button class="btn ghost" type="button" data-confirm-no>Vazgeç</button>
+        <button class="btn" type="button" data-confirm-yes>Onayla</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const modal = document.getElementById('confirm-modal');
+      if (!modal) return;
+      const messageEl = modal.querySelector('[data-confirm-message]');
+      const confirmBtn = modal.querySelector('[data-confirm-yes]');
+      const cancelBtn = modal.querySelector('[data-confirm-no]');
+      const closeTargets = modal.querySelectorAll('[data-confirm-close]');
+      let pendingAction = null;
+      let pendingCancel = null;
+
+      const openModal = (options) => {
+        const config = options || {};
+        pendingAction = typeof config.onConfirm === 'function' ? config.onConfirm : null;
+        pendingCancel = typeof config.onCancel === 'function' ? config.onCancel : null;
+        if (messageEl) messageEl.textContent = config.message || 'Bu işlemi onaylıyor musunuz?';
+        if (confirmBtn) confirmBtn.textContent = config.confirmText || 'Onayla';
+        if (cancelBtn) {
+          cancelBtn.textContent = config.cancelText || 'Vazgeç';
+          cancelBtn.style.display = config.showCancel === false ? 'none' : '';
+        }
+        modal.classList.add('is-open');
+        modal.setAttribute('aria-hidden', 'false');
+        confirmBtn?.focus();
+      };
+
+      const closeModal = () => {
+        modal.classList.remove('is-open');
+        modal.setAttribute('aria-hidden', 'true');
+        pendingAction = null;
+        pendingCancel = null;
+      };
+
+      document.addEventListener('submit', (event) => {
+        const form = event.target?.closest?.('form[data-confirm]');
+        if (!form) return;
+        if (form.dataset.confirmBypass === 'true') return;
+        event.preventDefault();
+        openModal({
+          message: form.dataset.confirm,
+          onConfirm: () => {
+            form.dataset.confirmBypass = 'true';
+            form.submit();
+          }
+        });
+      });
+
+      document.addEventListener('click', (event) => {
+        const link = event.target?.closest?.('a[data-confirm]');
+        if (!link) return;
+        event.preventDefault();
+        openModal({
+          message: link.dataset.confirm,
+          onConfirm: () => {
+            window.location.href = link.href;
+          }
+        });
+      });
+
+      document.addEventListener('change', (event) => {
+        const field = event.target;
+        if (!field || field.type !== 'checkbox' || !field.dataset.confirm) return;
+        if (field.dataset.confirmBypass === 'true') {
+          field.dataset.confirmBypass = 'false';
+          return;
+        }
+        if (!field.checked) return;
+        event.preventDefault();
+
+        const confirmMessage = field.dataset.confirm;
+        openModal({
+          message: confirmMessage,
+          onConfirm: () => {
+            field.dataset.confirmBypass = 'true';
+            field.dispatchEvent(new Event('input', { bubbles: true }));
+          },
+          onCancel: () => {
+            field.checked = false;
+          }
+        });
+      });
+
+      confirmBtn?.addEventListener('click', () => {
+        if (!pendingAction) return closeModal();
+        const action = pendingAction;
+        closeModal();
+        action();
+      });
+
+      cancelBtn?.addEventListener('click', () => {
+        if (!pendingCancel) return closeModal();
+        const action = pendingCancel;
+        closeModal();
+        action();
+      });
+      closeTargets.forEach((el) => el.addEventListener('click', closeModal));
+      document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && modal.classList.contains('is-open')) {
+          closeModal();
+        }
+      });
+
+      window.appAlert = (message) => {
+        openModal({
+          message: message || 'Bilgi',
+          confirmText: 'Tamam',
+          showCancel: false
+        });
+      };
+
+      window.appConfirm = (message, onConfirm, onCancel) => {
+        openModal({
+          message,
+          onConfirm,
+          onCancel,
+          showCancel: true
+        });
+      };
+
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('updated') === '1') {
+        window.appAlert('Güncelleme yapıldı, tekrar sisteme dönüyorsunuz.');
+        params.delete('updated');
+        const nextUrl = params.toString()
+          ? `${window.location.pathname}?${params.toString()}`
+          : window.location.pathname;
+        window.history.replaceState({}, document.title, nextUrl);
+      }
+
+      const menuToggle = document.querySelector('[data-admin-menu-toggle]');
+      const menuPanel = document.querySelector('[data-admin-menu-panel]');
+      const menuBackdrop = document.querySelector('[data-admin-menu-backdrop]');
+
+      const closeMenu = () => {
+        document.body.classList.remove('admin-menu-open');
+        if (menuToggle) menuToggle.setAttribute('aria-expanded', 'false');
+      };
+
+      if (menuToggle && menuPanel) {
+        menuToggle.addEventListener('click', () => {
+          const isOpen = document.body.classList.toggle('admin-menu-open');
+          menuToggle.setAttribute('aria-expanded', String(isOpen));
+        });
+      }
+
+      menuBackdrop?.addEventListener('click', closeMenu);
+      menuPanel?.addEventListener('click', (event) => {
+        const target = event.target;
+        if (target && target.closest && target.closest('a')) {
+          closeMenu();
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,45 @@
+<%- include('../partials/head', { bodyClass: 'admin-body' }) %>
+
+<div class="admin-layout">
+  <%- include('../partials/admin_nav', { adminActive: 'menu', adminSub: 'categories' }) %>
+  <div class="admin-content">
+    <h1 class="admin-title">Menü Kategorileri</h1>
+
+    <section class="admin-section">
+      <form class="form inline" method="POST" action="/admin/categories">
+        <label>
+          Yeni Kategori
+          <input type="text" name="name" placeholder="Örn: Künefe" required />
+        </label>
+        <button class="btn" type="submit">Oluştur</button>
+      </form>
+    </section>
+
+    <section class="admin-section">
+      <div class="table categories-table">
+        <div class="table-row table-head">
+          <div>Kategori</div>
+          <div>İşlem</div>
+        </div>
+        <% if (categories.length === 0) { %>
+          <div class="table-row">
+            <div>-</div>
+            <div>-</div>
+          </div>
+        <% } %>
+        <% categories.forEach((category) => { %>
+          <div class="table-row">
+            <div><%= category.name %></div>
+            <div>
+          <form method="POST" action="/admin/categories/<%= category.id %>/delete" data-confirm="Silmek istiyor musunuz?">
+            <button class="btn ghost" type="submit">Sil</button>
+          </form>
+            </div>
+          </div>
+        <% }) %>
+      </div>
+    </section>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>

@@ -1,0 +1,74 @@
+<%- include('../partials/head', { bodyClass: 'admin-body login-body' }) %>
+
+<section class="admin-login login-page">
+  <div class="login-shell">
+    <div class="login-info-panel">
+      <span class="login-pill">YÖNETİM GİRİŞİ</span>
+      <h1 class="login-brand">
+        Dondurmacı
+        <span>Zeki</span>
+      </h1>
+      <p class="login-desc">
+        Menü, QR ve ana sayfa içeriklerini tek panelden güvenle yönet.
+      </p>
+
+      <div class="login-chip">
+        <div class="chip-icon">DZ</div>
+        <div>
+          <strong>Yönetim Paneli</strong>
+          <p>Sadece yetkili ekip erişebilir.</p>
+        </div>
+      </div>
+
+      <div class="login-mini-cards">
+        <div class="mini-card">
+          <span class="mini-label">Erişim</span>
+          <strong>Güvenli oturum</strong>
+        </div>
+        <div class="mini-card">
+          <span class="mini-label">Sistem</span>
+          <strong>Canlı yönetim</strong>
+        </div>
+      </div>
+    </div>
+
+    <div class="login-form-panel">
+      <div class="login-form-head">
+        <span class="login-kicker">PANEL ERİŞİMİ</span>
+        <h2>Yetkili giriş yapın</h2>
+        <p>Yönetim araçlarına erişmek için kayıtlı e‑posta ve şifrenizi girin.</p>
+      </div>
+
+      <% if (error) { %>
+        <div class="error-box"><%= error %></div>
+      <% } %>
+
+      <form class="login-form" method="POST" action="/login">
+        <label class="login-field">
+          <span>Admin E‑Posta</span>
+          <div class="input-wrap">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 6h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1zm0 2.4 8 4.8 8-4.8V8l-8 4.8L4 8z" />
+            </svg>
+            <input type="text" name="username" placeholder="admin@dondurmacizeki.com" required />
+          </div>
+        </label>
+
+        <label class="login-field">
+          <span>Şifre</span>
+          <div class="input-wrap">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M17 10V8a5 5 0 0 0-10 0v2H6a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-7a1 1 0 0 0-1-1h-1zm-8 0V8a3 3 0 1 1 6 0v2H9z" />
+            </svg>
+            <input type="password" name="password" placeholder="Şifrenizi girin" required />
+          </div>
+        </label>
+
+        <button class="btn login-submit" type="submit">Panele devam et →</button>
+        <p class="login-note">Yalnızca yetkili personel erişebilir.</p>
+      </form>
+    </div>
+  </div>
+</section>
+
+<%- include('../partials/footer') %>

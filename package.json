@@ -1,0 +1,20 @@
+{
+  "name": "qr-menu-sistemi",
+  "version": "1.0.0",
+  "description": "QR menü sistemi (Express + SQLite)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.101.1",
+    "better-sqlite3": "^11.2.0",
+    "dotenv": "^16.6.0",
+    "ejs": "^3.1.10",
+    "express": "^4.19.2",
+    "express-session": "^1.17.3",
+    "multer": "^1.4.5-lts.1",
+    "qrcode": "^1.5.3"
+  }
+}

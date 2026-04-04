@@ -1,0 +1,446 @@
+<%- include('../partials/head', { bodyClass: 'admin-body admin-qr' }) %>
+
+<div class="admin-layout">
+  <%- include('../partials/admin_nav', { adminActive: 'qr' }) %>
+  <div class="admin-content">
+    <div class="qr-studio-shell">
+      <aside class="qr-sidebar">
+        <div class="qr-sidebar-header">
+          <div class="qr-sidebar-title">TASARIM EDİTÖRÜ</div>
+          <p>Masa kartınızı profesyonelce özelleştirin.</p>
+        </div>
+
+        <div class="qr-tabs" role="tablist">
+          <button class="qr-tab active" type="button" data-tab="templates">Şablon</button>
+          <button class="qr-tab" type="button" data-tab="content">İçerik</button>
+          <button class="qr-tab" type="button" data-tab="style">Stil</button>
+        </div>
+
+        <div class="qr-tab-panel active" data-panel="templates">
+          <div class="qr-section">
+            <div class="qr-section-title">Dondurma Şablonları</div>
+            <div class="qr-template-grid">
+              <button class="qr-template active" type="button" data-template="burger-klasik">
+                <span class="qr-template-icon">DK</span>
+                <span>Dondurma Klasik</span>
+              </button>
+              <button class="qr-template" type="button" data-template="sadece-qr">
+                <span class="qr-template-icon">QR</span>
+                <span>Sade QR (Minimal)</span>
+              </button>
+              <button class="qr-template" type="button" data-template="ates-kirmizi">
+                <span class="qr-template-icon">FK</span>
+                <span>Fıstık Kreması</span>
+              </button>
+              <button class="qr-template" type="button" data-template="royal-sunum">
+                <span class="qr-template-icon">PR</span>
+                <span>Prenses Sunum</span>
+              </button>
+              <button class="qr-template" type="button" data-template="sokak-lezzeti">
+                <span class="qr-template-icon">SK</span>
+                <span>Sokak Külahı</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="qr-tab-panel" data-panel="content">
+          <div class="qr-section">
+            <div class="qr-section-title">İçerik & Tipografi</div>
+            <label class="qr-field">
+              <span>Hedef URL</span>
+              <input type="text" value="<%= targetUrl %>" />
+            </label>
+            <label class="qr-field">
+              <span>Başlık Metni</span>
+              <input type="text" id="qr-title-input" value="ŞİMDİ TARA & DOY!" />
+            </label>
+            <label class="qr-field">
+              <span>Başlık Fontu</span>
+              <select id="qr-font-input">
+                <option value="Poppins" selected>Poppins</option>
+                <option value="Luckiest Guy">Luckiest Guy</option>
+                <option value="Bebas Neue">Bebas Neue</option>
+                <option value="Montserrat">Montserrat</option>
+              </select>
+            </label>
+          </div>
+        </div>
+
+        <div class="qr-tab-panel" data-panel="style">
+          <div class="qr-section">
+            <div class="qr-section-title">Renk Paleti</div>
+            <div class="qr-palette">
+              <label class="qr-swatch" style="--swatch:#f7d07a;">
+                <input type="color" id="qr-color-bg" value="#f7d07a" />
+                <span>Arka Plan</span>
+              </label>
+              <label class="qr-swatch" style="--swatch:#111111;">
+                <input type="color" id="qr-color-qr" value="#111111" />
+                <span>QR Rengi</span>
+              </label>
+              <label class="qr-swatch" style="--swatch:#3b2416;">
+                <input type="color" id="qr-color-text" value="#3b2416" />
+                <span>Yazı Rengi</span>
+              </label>
+              <label class="qr-swatch" style="--swatch:#3b2416;">
+                <input type="color" id="qr-color-frame" value="#3b2416" />
+                <span>Çerçeve/İkon</span>
+              </label>
+            </div>
+          </div>
+          <div class="qr-section">
+            <div class="qr-section-title">Form & Yapı</div>
+            <label class="qr-field">
+              <span>Köşe Yuvarlaklığı: 40px</span>
+              <input type="range" id="qr-radius-input" min="0" max="60" value="40" />
+            </label>
+            <label class="qr-field">
+              <span>Çerçeve Kalınlığı: 4px</span>
+              <input type="range" id="qr-frame-input" min="0" max="10" value="4" />
+            </label>
+          </div>
+        </div>
+
+        <button class="qr-reset" type="button">Varsayılana Dön</button>
+      </aside>
+
+      <main class="qr-main">
+        <div class="qr-topbar">
+          <div class="qr-live">
+            <span class="qr-live-dot"></span>
+            Canlı Tasarım Modu
+          </div>
+          <div class="qr-topbar-actions">
+            <div class="qr-zoom">
+              <button type="button" data-zoom="out">-</button>
+              <span>%80</span>
+              <button type="button" data-zoom="in">+</button>
+            </div>
+            <button class="qr-download" type="button">Yüksek Kalite İndir</button>
+          </div>
+        </div>
+
+        <div class="qr-canvas">
+          <div class="qr-preview">
+            <div class="qr-preview-icon">QR</div>
+            <div class="qr-preview-title" id="qr-preview-title">ŞİMDİ TARA & DOY!</div>
+            <div class="qr-preview-code">
+              <img src="<%= qrData %>" alt="QR Kod" />
+            </div>
+            <div class="qr-preview-footer">
+              <span>DONDURMACI ZEKİ</span>
+              <span>POWERED BY AJJANS MEDYA</span>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function () {
+    const preview = document.querySelector('.qr-preview');
+    if (!preview) return;
+
+    const titleInput = document.getElementById('qr-title-input');
+    const titleEl = document.getElementById('qr-preview-title');
+    const fontInput = document.getElementById('qr-font-input');
+    const radiusInput = document.getElementById('qr-radius-input');
+    const frameInput = document.getElementById('qr-frame-input');
+    const templateButtons = Array.from(document.querySelectorAll('.qr-template'));
+    const tabs = Array.from(document.querySelectorAll('.qr-tab'));
+    const panels = Array.from(document.querySelectorAll('.qr-tab-panel'));
+    const zoomWrap = document.querySelector('.qr-zoom');
+    const zoomLabel = zoomWrap?.querySelector('span');
+    const downloadBtn = document.querySelector('.qr-download');
+
+    const colorMap = [
+      { id: 'qr-color-bg', varName: '--qr-bg' },
+      { id: 'qr-color-text', varName: '--qr-text' },
+      { id: 'qr-color-qr', varName: '--qr-code-color' },
+      { id: 'qr-color-frame', varName: '--qr-frame-color' }
+    ];
+
+    const updateColorInput = (id, value) => {
+      const input = document.getElementById(id);
+      if (!input) return;
+      input.value = value;
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    };
+
+    colorMap.forEach(({ id, varName }) => {
+      const input = document.getElementById(id);
+      if (!input) return;
+      const update = () => {
+        preview.style.setProperty(varName, input.value);
+        if (input.parentElement) {
+          input.parentElement.style.setProperty('--swatch', input.value);
+        }
+      };
+      input.addEventListener('input', update);
+      update();
+    });
+
+    if (titleInput && titleEl) {
+      const updateTitle = () => {
+        titleEl.textContent = titleInput.value || '';
+      };
+      titleInput.addEventListener('input', updateTitle);
+      updateTitle();
+    }
+
+    if (fontInput) {
+      const updateFont = () => {
+        preview.style.setProperty('--qr-title-font', fontInput.value);
+      };
+      fontInput.addEventListener('change', updateFont);
+      updateFont();
+    }
+
+    if (radiusInput) {
+      const updateRadius = () => {
+        preview.style.setProperty('--qr-radius', `${radiusInput.value}px`);
+      };
+      radiusInput.addEventListener('input', updateRadius);
+      updateRadius();
+    }
+
+    if (frameInput) {
+      const updateFrame = () => {
+        preview.style.setProperty('--qr-frame', `${frameInput.value}px`);
+      };
+      frameInput.addEventListener('input', updateFrame);
+      updateFrame();
+    }
+
+    let zoom = 0.8;
+    const applyZoom = () => {
+      preview.style.transform = `scale(${zoom})`;
+      preview.style.transformOrigin = 'center';
+      if (zoomLabel) zoomLabel.textContent = `%${Math.round(zoom * 100)}`;
+    };
+
+    if (zoomWrap) {
+      zoomWrap.addEventListener('click', (event) => {
+        const btn = event.target.closest('button');
+        if (!btn) return;
+        const dir = btn.dataset.zoom;
+        if (dir === 'in') zoom = Math.min(1.6, zoom + 0.1);
+        if (dir === 'out') zoom = Math.max(0.5, zoom - 0.1);
+        applyZoom();
+      });
+      applyZoom();
+    }
+
+    const getCssVar = (name, fallback) => {
+      const value = getComputedStyle(preview).getPropertyValue(name).trim();
+      return value || fallback;
+    };
+
+    const drawRoundedRect = (ctx, x, y, w, h, r) => {
+      const radius = Math.min(r, w / 2, h / 2);
+      ctx.beginPath();
+      ctx.moveTo(x + radius, y);
+      ctx.arcTo(x + w, y, x + w, y + h, radius);
+      ctx.arcTo(x + w, y + h, x, y + h, radius);
+      ctx.arcTo(x, y + h, x, y, radius);
+      ctx.arcTo(x, y, x + w, y, radius);
+      ctx.closePath();
+    };
+
+    const downloadPreview = async () => {
+      const qrImg = document.querySelector('.qr-preview-code img');
+      if (!qrImg) return;
+
+      const scale = 3;
+      const rect = preview.getBoundingClientRect();
+      const width = rect.width * scale;
+      const height = rect.height * scale;
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      const bg = getCssVar('--qr-bg', '#f9b233');
+      const text = getCssVar('--qr-text', '#1d1b1a');
+      const frame = getCssVar('--qr-frame-color', '#0f0f0f');
+      const frameSize = parseFloat(getCssVar('--qr-frame', '4px')) * scale;
+      const radius = parseFloat(getCssVar('--qr-radius', '22px')) * scale;
+      const titleFont = getCssVar('--qr-title-font', 'Poppins');
+
+      // background
+      ctx.fillStyle = bg;
+      drawRoundedRect(ctx, 0, 0, width, height, radius);
+      ctx.fill();
+
+      // top icon
+      const iconSize = 38 * scale;
+      const iconX = (width - iconSize) / 2;
+      const iconY = 18 * scale;
+      ctx.fillStyle = frame;
+      drawRoundedRect(ctx, iconX, iconY, iconSize, iconSize, 12 * scale);
+      ctx.fill();
+      ctx.fillStyle = bg;
+      ctx.font = `${14 * scale}px ${titleFont}, sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('QR', width / 2, iconY + iconSize / 2);
+
+      // title
+      ctx.fillStyle = text;
+      ctx.font = `800 ${16 * scale}px ${titleFont}, sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      const titleText = titleEl ? titleEl.textContent : '';
+      ctx.fillText(titleText, width / 2, iconY + iconSize + 10 * scale);
+
+      // QR code block
+      const qrBlock = 180 * scale;
+      const qrBlockX = (width - qrBlock) / 2;
+      const qrBlockY = iconY + iconSize + 42 * scale;
+      ctx.fillStyle = '#ffffff';
+      drawRoundedRect(ctx, qrBlockX, qrBlockY, qrBlock, qrBlock, 16 * scale);
+      ctx.fill();
+
+      ctx.strokeStyle = frame;
+      ctx.lineWidth = frameSize;
+      drawRoundedRect(ctx, qrBlockX, qrBlockY, qrBlock, qrBlock, 16 * scale);
+      ctx.stroke();
+
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.src = qrImg.src;
+      await new Promise((resolve) => {
+        if (img.complete) return resolve();
+        img.onload = () => resolve();
+        img.onerror = () => resolve();
+      });
+
+      const qrInner = qrBlock - frameSize * 2 - 12 * scale;
+      const qrInnerX = qrBlockX + frameSize + 6 * scale;
+      const qrInnerY = qrBlockY + frameSize + 6 * scale;
+      ctx.drawImage(img, qrInnerX, qrInnerY, qrInner, qrInner);
+
+      // footer
+      ctx.fillStyle = text;
+      ctx.font = `600 ${8 * scale}px Poppins, sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      ctx.fillText('DONDURMACI ZEKİ', width / 2, qrBlockY + qrBlock + 12 * scale);
+      ctx.fillText('POWERED BY QR MENÜ', width / 2, qrBlockY + qrBlock + 26 * scale);
+
+      const link = document.createElement('a');
+      link.download = 'qr-menu.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    };
+
+    if (downloadBtn) {
+      downloadBtn.addEventListener('click', downloadPreview);
+    }
+
+    const templates = {
+      'burger-klasik': {
+        bg: '#f7d07a',
+        text: '#3b2416',
+        qr: '#111111',
+        frame: '#3b2416',
+        title: 'DONDURMACI ZEKİ',
+        font: 'Luckiest Guy',
+        radius: 40,
+        frameSize: 4
+      },
+      'sadece-qr': {
+        bg: '#f5f5f5',
+        text: '#2d2d2d',
+        qr: '#111111',
+        frame: '#2d2d2d',
+        title: 'QR MENÜ',
+        font: 'Montserrat',
+        radius: 24,
+        frameSize: 2
+      },
+      'ates-kirmizi': {
+        bg: '#cfe6a4',
+        text: '#2c4b2a',
+        qr: '#111111',
+        frame: '#2c4b2a',
+        title: 'FISTIK KREMASI',
+        font: 'Poppins',
+        radius: 32,
+        frameSize: 4
+      },
+      'royal-sunum': {
+        bg: '#f7d9e3',
+        text: '#7a3b59',
+        qr: '#111111',
+        frame: '#7a3b59',
+        title: 'PRENSES SUNUM',
+        font: 'Bebas Neue',
+        radius: 28,
+        frameSize: 3
+      },
+      'sokak-lezzeti': {
+        bg: '#e8b07d',
+        text: '#4a2e1a',
+        qr: '#111111',
+        frame: '#4a2e1a',
+        title: 'SOKAK KÜLAHI',
+        font: 'Luckiest Guy',
+        radius: 36,
+        frameSize: 5
+      }
+    };
+
+    const applyTemplate = (key) => {
+      const preset = templates[key];
+      if (!preset) return;
+      updateColorInput('qr-color-bg', preset.bg);
+      updateColorInput('qr-color-text', preset.text);
+      updateColorInput('qr-color-qr', preset.qr);
+      updateColorInput('qr-color-frame', preset.frame);
+      if (titleInput) {
+        titleInput.value = preset.title;
+        titleInput.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+      if (fontInput) {
+        fontInput.value = preset.font;
+        fontInput.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+      if (radiusInput) {
+        radiusInput.value = preset.radius;
+        radiusInput.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+      if (frameInput) {
+        frameInput.value = preset.frameSize;
+        frameInput.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+    };
+
+    templateButtons.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        templateButtons.forEach((el) => el.classList.remove('active'));
+        btn.classList.add('active');
+        applyTemplate(btn.dataset.template);
+      });
+    });
+
+    tabs.forEach((tab) => {
+      tab.addEventListener('click', () => {
+        const target = tab.dataset.tab;
+        tabs.forEach((t) => t.classList.remove('active'));
+        tab.classList.add('active');
+        panels.forEach((panel) => {
+          panel.classList.toggle('active', panel.dataset.panel === target);
+        });
+      });
+    });
+
+    applyTemplate('burger-klasik');
+  })();
+</script>
+
+<%- include('../partials/footer') %>

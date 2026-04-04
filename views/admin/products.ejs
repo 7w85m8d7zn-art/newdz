@@ -1,0 +1,83 @@
+<%- include('../partials/head', { bodyClass: 'admin-body' }) %>
+
+<div class="admin-layout">
+  <%- include('../partials/admin_nav', { adminActive: 'menu', adminSub: 'products' }) %>
+  <div class="admin-content">
+    <h1 class="admin-title">Menü Yönetimi</h1>
+
+    <section class="admin-section">
+      <form class="form" method="POST" action="/admin/products" enctype="multipart/form-data">
+        <label>
+          Kategori
+          <select name="categoryId" required>
+            <option value="">Seçiniz</option>
+            <% categories.forEach((category) => { %>
+              <option value="<%= category.id %>"><%= category.name %></option>
+            <% }) %>
+          </select>
+        </label>
+        <label>
+          Ürün Adı
+          <input type="text" name="name" placeholder="Örn: Fıstıklı Künefe" required />
+        </label>
+        <label>
+          Açıklama
+          <textarea name="description" rows="2" placeholder="Örn: Üzerine kaymak ve fıstık."></textarea>
+        </label>
+        <label>
+          Fiyat (₺)
+          <input type="text" name="price" placeholder="Örn: 160" />
+        </label>
+        <label>
+          Görsel
+          <input type="file" name="image" accept="image/*" />
+        </label>
+        <button class="btn" type="submit">Ürün Ekle</button>
+      </form>
+    </section>
+
+    <section class="admin-section">
+      <div class="table">
+        <div class="table-row table-head">
+          <div>Ürün</div>
+          <div>Kategori</div>
+          <div>Fiyat</div>
+          <div>İşlem</div>
+        </div>
+        <% if (products.length === 0) { %>
+          <div class="table-row">
+            <div>-</div>
+            <div>-</div>
+            <div>-</div>
+            <div>-</div>
+          </div>
+        <% } %>
+        <% products.forEach((product) => { %>
+          <div class="table-row">
+            <div>
+              <strong><%= product.name %></strong>
+              <% if (product.image_path) { %>
+                <div class="thumb-wrap">
+                  <img class="thumb" src="<%= product.image_path %>" alt="<%= product.name %>" />
+                </div>
+              <% } %>
+              <% if (product.description) { %>
+                <div class="muted"><%= product.description %></div>
+              <% } %>
+            </div>
+            <div><%= product.category_name %></div>
+            <div><%= product.price ? `₺ ${product.price}` : '-' %></div>
+            <div class="actions">
+              <form method="POST" action="/admin/products/<%= product.id %>/delete" data-confirm="Silmek istiyor musunuz?">
+                <button class="btn ghost" type="submit">Sil</button>
+              </form>
+              <a class="btn ghost" href="/admin/products/<%= product.id %>/edit">Düzenle</a>
+            </div>
+          </div>
+        <% }) %>
+      </div>
+    </section>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>

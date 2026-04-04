@@ -1,0 +1,33 @@
+<div class="admin-global-action">
+  <form method="POST" action="/admin/logout" data-confirm="Sistemi kapatmak istiyor musunuz?">
+    <button class="dashboard-action" type="submit">Sistemi Kapat</button>
+  </form>
+</div>
+
+<button class="admin-menu-toggle" type="button" data-admin-menu-toggle aria-expanded="false">
+  <span></span>
+  <span></span>
+  <span></span>
+  Menü
+</button>
+<div class="admin-menu-backdrop" data-admin-menu-backdrop></div>
+
+<section class="admin-shell" data-admin-menu-panel>
+  <div class="admin-hero">
+    <div class="admin-brand">DONDURMACI ZEKİ</div>
+    <div class="admin-subtitle">ADMIN KONTROL</div>
+  </div>
+  <div class="admin-divider"></div>
+  <nav class="admin-nav">
+    <a class="admin-link <%= adminActive === 'overview' ? 'active' : '' %>" href="/admin">Genel Bakış</a>
+    <a class="admin-link <%= adminActive === 'menu' ? 'active' : '' %>" href="/admin/products">Menü Yönetimi</a>
+    <% if (adminActive === 'menu') { %>
+      <div class="admin-subnav">
+        <a class="admin-sublink <%= adminSub === 'products' ? 'active' : '' %>" href="/admin/products">Ürünler</a>
+        <a class="admin-sublink <%= adminSub === 'categories' ? 'active' : '' %>" href="/admin/categories">Kategoriler</a>
+      </div>
+    <% } %>
+    <a class="admin-link <%= adminActive === 'qr' ? 'active' : '' %>" href="/admin/qr">QR Kod Stüdyosu</a>
+    <a class="admin-link <%= adminActive === 'welcome' ? 'active' : '' %>" href="/admin/welcome">Ana Sayfa İçerik</a>
+  </nav>
+</section>

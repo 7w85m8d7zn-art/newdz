@@ -1,0 +1,101 @@
+<%- include('../partials/head', { bodyClass: 'admin-body' }) %>
+
+<div class="admin-layout">
+  <%- include('../partials/admin_nav', { adminActive: 'welcome' }) %>
+  <div class="admin-content">
+    <h1 class="admin-title">Ana Sayfa İçerik</h1>
+
+    <section class="admin-section">
+      <form class="form" method="POST" action="/admin/welcome" enctype="multipart/form-data">
+        <label>
+          Ana Başlık
+          <input type="text" name="hero_title" value="<%= settings.hero_title %>" required />
+        </label>
+        <label>
+          Slogan (satır atlayabilirsiniz)
+          <textarea name="hero_slogan" rows="3"><%= settings.hero_slogan %></textarea>
+        </label>
+
+        <label>
+          Açılış Saati Metni
+          <input type="text" name="hours_text" value="<%= settings.hours_text %>" />
+        </label>
+        <label>
+          Telefon Metni
+          <input type="text" name="phone_text" value="<%= settings.phone_text %>" />
+        </label>
+
+        <label>
+          Instagram Linki
+          <input type="text" name="instagram_url" value="<%= settings.instagram_url %>" />
+        </label>
+        <label>
+          TikTok Linki
+          <input type="text" name="tiktok_url" value="<%= settings.tiktok_url %>" />
+        </label>
+
+        <label>
+          Powered By Metni
+          <input type="text" name="powered_by" value="<%= settings.powered_by %>" />
+        </label>
+
+        <label>
+          Şube Başlığı
+          <input type="text" name="branch_name" value="<%= settings.branch_name %>" />
+        </label>
+        <label>
+          Şube Adresi
+          <textarea name="branch_address" rows="2"><%= settings.branch_address %></textarea>
+        </label>
+
+        <label>
+          Konum Linki
+          <input type="text" name="location_url" value="<%= settings.location_url %>" />
+        </label>
+        <label>
+          Konum Buton Metni
+          <input type="text" name="location_button" value="<%= settings.location_button %>" />
+        </label>
+
+        <label>
+          Menü Buton Metni
+          <input type="text" name="menu_button" value="<%= settings.menu_button %>" />
+        </label>
+
+        <label>
+          Arkaplan Görseli Yükle (opsiyonel)
+          <input type="file" name="background_image_file" accept="image/*" />
+        </label>
+        <% if (settings.background_image) { %>
+          <div class="image-preview">
+            <img src="<%= settings.background_image %>" alt="Arkaplan" />
+            <label class="switch">
+              <input type="checkbox" name="remove_background" value="1" data-confirm="Arkaplan görseli kaldırılsın mı?" />
+              <span class="switch-ui"></span>
+              <span class="switch-text">Arkaplan görselini kaldır</span>
+            </label>
+          </div>
+        <% } %>
+
+        <label>
+          Logo Görseli Yükle (opsiyonel)
+          <input type="file" name="logo_image_file" accept="image/*" />
+        </label>
+        <% if (settings.logo_image) { %>
+          <div class="image-preview">
+            <img src="<%= settings.logo_image %>" alt="Logo" />
+            <label class="switch">
+              <input type="checkbox" name="remove_logo" value="1" data-confirm="Logo görseli kaldırılsın mı?" />
+              <span class="switch-ui"></span>
+              <span class="switch-text">Logo görselini kaldır</span>
+            </label>
+          </div>
+        <% } %>
+
+        <button class="btn" type="submit">Güncelle</button>
+      </form>
+    </section>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>

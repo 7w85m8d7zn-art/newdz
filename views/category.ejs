@@ -1,0 +1,37 @@
+<%- include('partials/head') %>
+
+<section class="section-header">
+  <div>
+    <p class="eyebrow">Kategori</p>
+    <h1><%= category.name %></h1>
+    <p class="subtitle">Seçili kategoriye ait ürünler.</p>
+  </div>
+  <a class="btn ghost" href="/menus">Tüm Menüler</a>
+</section>
+
+<section class="product-list">
+  <% if (products.length === 0) { %>
+    <div class="empty-state">
+      <p>Bu kategoride henüz ürün yok. Admin panelinden ekleyebilirsiniz.</p>
+    </div>
+  <% } %>
+
+  <% products.forEach((product) => { %>
+    <div class="product-card">
+      <% if (product.image_path) { %>
+        <img class="product-image" src="<%= product.image_path %>" alt="<%= product.name %>" loading="lazy" />
+      <% } %>
+      <div class="product-info">
+        <h3><%= product.name %></h3>
+        <% if (product.description) { %>
+          <p><%= product.description %></p>
+        <% } %>
+      </div>
+      <% if (product.price) { %>
+        <span class="price">₺ <%= product.price %></span>
+      <% } %>
+    </div>
+  <% }) %>
+</section>
+
+<%- include('partials/footer') %>

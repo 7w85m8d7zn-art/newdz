@@ -1,0 +1,53 @@
+<%- include('partials/head') %>
+
+<section class="section-header">
+  <div>
+    <p class="eyebrow">Menüler</p>
+    <h1>Menülerimizi Keşfedin</h1>
+    <p class="subtitle">Her kategori için taze ve özel lezzetler.</p>
+  </div>
+</section>
+
+<nav class="menu-filters">
+  <a class="menu-filter <%= selectedSlug === 'all' ? 'active' : '' %>" href="/menus">Tümü</a>
+  <% categories.forEach((category) => { %>
+    <a class="menu-filter <%= selectedSlug === category.slug ? 'active' : '' %>" href="/menus?kategori=<%= category.slug %>"><%= category.name %></a>
+  <% }) %>
+</nav>
+
+<% if (sections.length === 0) { %>
+  <div class="empty-state">
+    <p>Şu anda menümüze ürünler eklenmedi düzenleme bakım aşamasındayız. Anlayışınız için teşekkürler.</p>
+  </div>
+<% } %>
+
+<% sections.forEach(({ category, products }) => { %>
+  <section class="menu-section">
+    <% if (selectedSlug !== 'all') { %>
+      <div class="menu-section-header">
+        <h2><%= category.name %></h2>
+      </div>
+    <% } %>
+
+    <div class="product-list">
+      <% products.forEach((product) => { %>
+        <div class="product-card">
+          <% if (product.image_path) { %>
+            <img class="product-image" src="<%= product.image_path %>" alt="<%= product.name %>" loading="lazy" />
+          <% } %>
+          <div class="product-info">
+            <h3><%= product.name %></h3>
+            <% if (product.description) { %>
+              <p><%= product.description %></p>
+            <% } %>
+          </div>
+          <% if (product.price) { %>
+            <span class="price">₺ <%= product.price %></span>
+          <% } %>
+        </div>
+      <% }) %>
+    </div>
+  </section>
+<% }) %>
+
+<%- include('partials/footer') %>

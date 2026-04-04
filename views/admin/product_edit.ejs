@@ -1,0 +1,52 @@
+<%- include('../partials/head', { bodyClass: 'admin-body' }) %>
+
+<div class="admin-layout">
+  <%- include('../partials/admin_nav', { adminActive: 'menu', adminSub: 'products' }) %>
+  <div class="admin-content">
+    <h1 class="admin-title">Ürün Düzenle</h1>
+
+    <section class="admin-section">
+      <form class="form" method="POST" action="/admin/products/<%= product.id %>/edit" enctype="multipart/form-data">
+        <label>
+          Kategori
+          <select name="categoryId" required>
+            <% categories.forEach((category) => { %>
+              <option value="<%= category.id %>" <%= category.id === product.category_id ? 'selected' : '' %>><%= category.name %></option>
+            <% }) %>
+          </select>
+        </label>
+        <label>
+          Ürün Adı
+          <input type="text" name="name" value="<%= product.name %>" required />
+        </label>
+        <label>
+          Açıklama
+          <textarea name="description" rows="2"><%= product.description || '' %></textarea>
+        </label>
+        <label>
+          Fiyat (₺)
+          <input type="text" name="price" value="<%= product.price || '' %>" />
+        </label>
+        <label>
+          Yeni Görsel (opsiyonel)
+          <input type="file" name="image" accept="image/*" />
+        </label>
+        <% if (product.image_path) { %>
+          <div class="image-preview">
+            <img src="<%= product.image_path %>" alt="<%= product.name %>" />
+            <label class="checkbox">
+              <input type="checkbox" name="removeImage" value="1" />
+              Görseli kaldır
+            </label>
+          </div>
+        <% } %>
+        <div class="actions">
+          <button class="btn" type="submit">Güncelle</button>
+          <a class="btn ghost" href="/admin/products">İptal</a>
+        </div>
+      </form>
+    </section>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>
