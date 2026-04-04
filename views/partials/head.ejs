@@ -4,12 +4,12 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title><%= pageTitle %> | QR Menü</title>
-  <% if (Array.isArray(preconnectOrigins)) { %>
+  <% if (typeof preconnectOrigins !== 'undefined' && Array.isArray(preconnectOrigins)) { %>
     <% preconnectOrigins.forEach((origin) => { %>
       <link rel="preconnect" href="<%= origin %>" crossorigin />
     <% }) %>
   <% } %>
-  <% if (Array.isArray(preloadImages)) { %>
+  <% if (typeof preloadImages !== 'undefined' && Array.isArray(preloadImages)) { %>
     <% preloadImages.forEach((imageUrl) => { %>
       <link rel="preload" as="image" href="<%= imageUrl %>" />
     <% }) %>
