@@ -23,7 +23,14 @@
 
 <% sections.forEach(({ category, products }) => { %>
   <section class="menu-section">
-    <% if (selectedSlug !== 'all') { %>
+    <% if (category) { %>
+      <div class="menu-section-header">
+        <h2><%= category.name %></h2>
+        <% if (selectedSlug === 'all' && category.slug) { %>
+          <a class="menu-link" href="/menus?kategori=<%= category.slug %>">Tümünü gör</a>
+        <% } %>
+      </div>
+    <% } else if (selectedSlug !== 'all') { %>
       <div class="menu-section-header">
         <h2><%= category.name %></h2>
       </div>

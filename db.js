@@ -481,12 +481,18 @@ async function updateProduct({ id, categoryId, name, description, price, imagePa
   }
 }
 
-async function getProductsByCategory(categoryId) {
+async function getProductsByCategory(categoryId, options = {}) {
+  const limit = Number.isFinite(options.limit) ? options.limit : null;
   if (!useSupabase) {
-    return sqlite.prepare('SELECT * FROM products WHERE category_id = ? AND active = 1 ORDER BY sort_order ASC, id DESC').all(categoryId);
+    if (!limit) {
+      return sqlite.prepare('SELECT * FROM products WHERE category_id = ? AND active = 1 ORDER BY sort_order ASC, id DESC').all(categoryId);
+    }
+    return sqlite
+      .prepare('SELECT * FROM products WHERE category_id = ? AND active = 1 ORDER BY sort_order ASC, id DESC LIMIT ?')
+      .all(categoryId, limit);
   }
 
-  const { data, error } = await supabase
+  let query = supabase
     .from('products')
     .select('*')
     .eq('category_id', categoryId)
@@ -494,14 +500,26 @@ async function getProductsByCategory(categoryId) {
     .order('sort_order', { ascending: true })
     .order('id', { ascending: false });
 
+  if (limit) {
+    query = query.range(0, limit - 1);
+  }
+
+  const { data, error } = await query;
+
   if (error) {
     console.warn('Ürünler alınamadı (sort_order):', error.message);
-    const fallback = await supabase
+    let fallbackQuery = supabase
       .from('products')
       .select('*')
       .eq('category_id', categoryId)
       .eq('active', true)
       .order('id', { ascending: false });
+
+    if (limit) {
+      fallbackQuery = fallbackQuery.range(0, limit - 1);
+    }
+
+    const fallback = await fallbackQuery;
     if (fallback.error) {
       console.warn('Ürünler alınamadı:', fallback.error.message);
       return [];

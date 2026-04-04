@@ -78,6 +78,7 @@ const upload = multer({
 });
 
 const ADMIN_PAGE_SIZE = Math.min(50, Math.max(10, Number(process.env.ADMIN_PAGE_SIZE || 20)));
+const MENU_ITEMS_PER_CATEGORY = Math.min(20, Math.max(4, Number(process.env.MENU_ITEMS_PER_CATEGORY || 8)));
 
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
@@ -149,6 +150,8 @@ const uploadImage = async (file, folder) => {
 const cacheStore = {
   settings: { value: null, expires: 0 },
   stats: { value: null, expires: 0 },
+  menuCategories: { value: null, expires: 0 },
+  menuProducts: new Map(),
   qr: new Map()
 };
 
@@ -168,6 +171,11 @@ const invalidateCache = (key) => {
   cacheStore[key] = { value: null, expires: 0 };
 };
 
+const invalidateMenuCache = () => {
+  cacheStore.menuCategories = { value: null, expires: 0 };
+  cacheStore.menuProducts.clear();
+};
+
 const getCachedStats = async () =>
   getCached('stats', 15000, async () => {
     const stats = await db.getScanStats();
@@ -182,6 +190,19 @@ const getCachedQr = async (targetUrl) => {
   if (entry && entry.expires > now) return entry.data;
   const data = await QRCode.toDataURL(targetUrl, { margin: 1, width: 240 });
   cacheStore.qr.set(targetUrl, { data, expires: now + 5 * 60 * 1000 });
+  return data;
+};
+
+const getCachedMenuCategories = async () =>
+  getCached('menuCategories', 20000, async () => db.getCategories());
+
+const getCachedMenuProducts = async (categoryId, limit) => {
+  const now = Date.now();
+  const key = `${categoryId}:${limit || 'all'}`;
+  const entry = cacheStore.menuProducts.get(key);
+  if (entry && entry.expires > now) return entry.data;
+  const data = await db.getProductsByCategory(categoryId, limit ? { limit } : {});
+  cacheStore.menuProducts.set(key, { data, expires: now + 20000 });
   return data;
 };
 
@@ -307,22 +328,24 @@ app.get('/', async (req, res) => {
 });
 
 app.get('/menus', async (req, res) => {
-  const categories = await db.getCategories();
+  const categories = await getCachedMenuCategories();
   const selectedSlug = req.query.kategori;
 
   if (selectedSlug) {
-    const category = await db.getCategoryBySlug(selectedSlug);
+    const category =
+      categories.find((item) => item.slug === selectedSlug) ||
+      (await db.getCategoryBySlug(selectedSlug));
     if (!category) {
       return res.status(404).render('not_found', { pageTitle: 'Bulunamadı' });
     }
-    const products = await db.getProductsByCategory(category.id);
+    const products = await getCachedMenuProducts(category.id);
     if (products.length === 0) {
       return res.redirect('/menus');
     }
 
     const categoriesWithProducts = [];
     for (const item of categories) {
-      const itemProducts = await db.getProductsByCategory(item.id);
+      const itemProducts = await getCachedMenuProducts(item.id, 1);
       if (itemProducts.length > 0) {
         categoriesWithProducts.push(item);
       }
@@ -336,17 +359,15 @@ app.get('/menus', async (req, res) => {
     });
   }
 
+  const sections = [];
   const categoriesWithProducts = [];
-  const allProducts = [];
   for (const category of categories) {
-    const products = await db.getProductsByCategory(category.id);
+    const products = await getCachedMenuProducts(category.id, MENU_ITEMS_PER_CATEGORY);
     if (products.length > 0) {
       categoriesWithProducts.push(category);
-      allProducts.push(...products);
+      sections.push({ category, products });
     }
   }
-
-  const sections = allProducts.length > 0 ? [{ category: null, products: allProducts }] : [];
 
   return res.render('menus', {
     pageTitle: 'Menüler',
@@ -502,6 +523,7 @@ app.post('/admin/categories', async (req, res) => {
   if (name) {
     await db.addCategory(name);
   }
+  invalidateMenuCache();
   const message = name ? `Kategori oluşturuldu: ${name}` : 'Değişiklikler yapıldı.';
   res.redirect(buildNoticeUrl('/admin/categories', message));
 });
@@ -511,6 +533,7 @@ app.post('/admin/categories/:id/delete', async (req, res) => {
   const categories = await db.getCategories();
   const target = categories.find((category) => category.id === id);
   await db.deleteCategory(id);
+  invalidateMenuCache();
   const message = target?.name ? `Kategori silindi: ${target.name}` : 'Kategori silindi.';
   res.redirect(buildNoticeUrl('/admin/categories', message));
 });
@@ -555,6 +578,7 @@ app.post('/admin/products', upload.single('image'), async (req, res) => {
       noticeMessage = `Ürün oluşturuldu: ${name.trim()}`;
     }
   }
+  invalidateMenuCache();
   res.redirect(buildNoticeUrl('/admin/products', noticeMessage));
 });
 
@@ -565,6 +589,7 @@ app.post('/admin/products/reorder', requireAdmin, async (req, res) => {
     return res.status(400).json({ ok: false });
   }
   await db.updateProductOrder(order, offset);
+  invalidateMenuCache();
   return res.json({ ok: true });
 });
 
@@ -615,6 +640,7 @@ app.post('/admin/products/:id/edit', upload.single('image'), async (req, res) =>
       imagePath
     });
   }
+  invalidateMenuCache();
   const message = name?.trim() ? `Ürün güncellendi: ${name.trim()}` : 'Değişiklikler yapıldı.';
   res.redirect(buildNoticeUrl('/admin/products', message));
 });
@@ -626,6 +652,7 @@ app.post('/admin/products/:id/delete', async (req, res) => {
     await deleteUploadedFile(existing.image_path);
   }
   await db.deleteProduct(id);
+  invalidateMenuCache();
   const message = existing?.name ? `Ürün silindi: ${existing.name}` : 'Ürün silindi.';
   res.redirect(buildNoticeUrl('/admin/products', message));
 });
