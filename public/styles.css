@@ -739,7 +739,8 @@ img {
 }
 
 .product-meta {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 0.75rem;
 }
@@ -747,13 +748,14 @@ img {
 .product-meta h3 {
   flex: 1;
   margin: 0;
+  min-width: 0;
 }
 
 .price {
   font-weight: 700;
   color: var(--raspberry);
   white-space: nowrap;
-  margin-left: auto;
+  justify-self: end;
   font-size: 1.1rem;
 }
 
