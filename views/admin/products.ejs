@@ -124,18 +124,28 @@
         const res = await fetch('/admin/products/reorder', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
           body: JSON.stringify({
             order: ids,
             offset: Number(table.dataset.offset || 0)
           })
         });
-        if (!res.ok) throw new Error('Request failed');
+        let payload = null;
+        try {
+          payload = await res.json();
+        } catch (err) {
+          payload = null;
+        }
+        if (!res.ok || !payload?.ok) {
+          const message = payload?.error || 'Request failed';
+          throw new Error(message);
+        }
         if (window.appAlert) {
           window.appAlert('Sıralama güncellendi.');
         }
       } catch (err) {
         if (window.appAlert) {
-          window.appAlert('Sıralama kaydedilemedi.');
+          window.appAlert(`Sıralama kaydedilemedi: ${err.message || 'hata'}`);
         }
       }
     };

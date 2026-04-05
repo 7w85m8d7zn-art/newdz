@@ -592,13 +592,19 @@ app.post('/admin/products', upload.single('image'), async (req, res) => {
   res.redirect(buildNoticeUrl('/admin/products', noticeMessage));
 });
 
-app.post('/admin/products/reorder', requireAdmin, async (req, res) => {
+app.post('/admin/products/reorder', async (req, res) => {
+  if (!req.isAdmin) {
+    return res.status(401).json({ ok: false, error: 'unauthorized' });
+  }
   const order = Array.isArray(req.body.order) ? req.body.order : [];
   const offset = Math.max(0, Number(req.body.offset) || 0);
   if (order.length === 0) {
-    return res.status(400).json({ ok: false });
+    return res.status(400).json({ ok: false, error: 'empty_order' });
   }
-  await db.updateProductOrder(order, offset);
+  const result = await db.updateProductOrder(order, offset);
+  if (!result?.ok) {
+    return res.status(500).json({ ok: false, error: result?.error || 'update_failed' });
+  }
   invalidateMenuCache();
   return res.json({ ok: true });
 });

@@ -647,7 +647,9 @@ async function getNextProductSortOrder() {
 }
 
 async function updateProductOrder(ids, offset = 0) {
-  if (!Array.isArray(ids) || ids.length === 0) return;
+  if (!Array.isArray(ids) || ids.length === 0) {
+    return { ok: false, error: 'empty_order' };
+  }
   const normalizedOffset = Number.isFinite(offset) ? offset : 0;
   const updates = ids.map((id, index) => ({
     id: Number(id),
@@ -660,13 +662,15 @@ async function updateProductOrder(ids, offset = 0) {
       rows.forEach((row) => update.run(row.sort_order, row.id));
     });
     transaction(updates);
-    return;
+    return { ok: true };
   }
 
   const { error } = await supabase.from('products').upsert(updates, { onConflict: 'id' });
   if (error) {
     console.warn('Ürün sırası güncellenemedi:', error.message);
+    return { ok: false, error: error.message };
   }
+  return { ok: true };
 }
 
 async function logQrScan() {
