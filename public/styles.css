@@ -738,11 +738,22 @@ img {
   gap: 0.3rem;
 }
 
+.product-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.product-meta h3 {
+  flex: 1;
+  margin: 0;
+}
+
 .price {
   font-weight: 700;
   color: var(--raspberry);
   white-space: nowrap;
-  align-self: flex-end;
+  margin-left: auto;
   font-size: 1.1rem;
 }
 

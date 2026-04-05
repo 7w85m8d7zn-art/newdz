@@ -40,14 +40,16 @@
             <img class="product-image" src="<%= product.image_path %>" alt="<%= product.name %>" loading="lazy" />
           <% } %>
           <div class="product-info">
-            <h3><%= product.name %></h3>
+            <div class="product-meta">
+              <h3><%= product.name %></h3>
+              <% if (product.price) { %>
+                <span class="price">₺ <%= product.price %></span>
+              <% } %>
+            </div>
             <% if (product.description) { %>
               <p><%= product.description %></p>
             <% } %>
           </div>
-          <% if (product.price) { %>
-            <span class="price">₺ <%= product.price %></span>
-          <% } %>
         </div>
       <% }) %>
     </div>
