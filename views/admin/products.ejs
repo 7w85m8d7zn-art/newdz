@@ -118,7 +118,9 @@
     };
 
     const saveOrder = async () => {
-      const ids = Array.from(table.querySelectorAll('.product-row')).map((row) => row.dataset.productId);
+      const ids = Array.from(table.querySelectorAll('.product-row'))
+        .map((row) => Number(row.dataset.productId))
+        .filter((id) => Number.isFinite(id));
       if (!ids.length) return;
       try {
         const res = await fetch('/admin/products/reorder', {

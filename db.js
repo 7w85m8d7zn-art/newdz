@@ -665,10 +665,12 @@ async function updateProductOrder(ids, offset = 0) {
     return { ok: true };
   }
 
-  const { error } = await supabase.from('products').upsert(updates, { onConflict: 'id' });
-  if (error) {
-    console.warn('Ürün sırası güncellenemedi:', error.message);
-    return { ok: false, error: error.message };
+  for (const row of updates) {
+    const { error } = await supabase.from('products').update({ sort_order: row.sort_order }).eq('id', row.id);
+    if (error) {
+      console.warn('Ürün sırası güncellenemedi:', error.message);
+      return { ok: false, error: error.message };
+    }
   }
   return { ok: true };
 }

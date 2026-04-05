@@ -596,7 +596,8 @@ app.post('/admin/products/reorder', async (req, res) => {
   if (!req.isAdmin) {
     return res.status(401).json({ ok: false, error: 'unauthorized' });
   }
-  const order = Array.isArray(req.body.order) ? req.body.order : [];
+  const orderRaw = Array.isArray(req.body.order) ? req.body.order : [];
+  const order = orderRaw.map((id) => Number(id)).filter((id) => Number.isFinite(id));
   const offset = Math.max(0, Number(req.body.offset) || 0);
   if (order.length === 0) {
     return res.status(400).json({ ok: false, error: 'empty_order' });
