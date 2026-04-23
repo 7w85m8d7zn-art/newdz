@@ -185,6 +185,22 @@ if (!useSupabase) {
   initSqlite();
 }
 
+function ensureSqliteFallback() {
+  if (sqlite) return true;
+  try {
+    initSqlite();
+    return true;
+  } catch (error) {
+    console.warn('SQLite fallback başlatılamadı:', error?.message || String(error));
+    return false;
+  }
+}
+
+function getSqliteActiveCategories() {
+  if (!ensureSqliteFallback()) return [];
+  return sqlite.prepare('SELECT * FROM categories WHERE active = 1 ORDER BY sort_order ASC, name ASC').all();
+}
+
 async function ensureUniqueSlug(base) {
   if (!useSupabase) {
     let slug = base;
@@ -335,22 +351,27 @@ async function updateWelcome(payload) {
 
 async function getCategories() {
   if (!useSupabase) {
-    return sqlite.prepare('SELECT * FROM categories WHERE active = 1 ORDER BY sort_order ASC, name ASC').all();
+    return getSqliteActiveCategories();
   }
 
-  await ensureDefaultCategories();
-  const { data, error } = await supabase
-    .from('categories')
-    .select('*')
-    .eq('active', true)
-    .order('sort_order', { ascending: true })
-    .order('name', { ascending: true });
+  try {
+    await ensureDefaultCategories();
+    const { data, error } = await supabase
+      .from('categories')
+      .select('*')
+      .eq('active', true)
+      .order('sort_order', { ascending: true })
+      .order('name', { ascending: true });
 
-  if (error) {
-    console.warn('Kategoriler okunamadı:', error.message);
-    return [];
+    if (error) {
+      console.warn('Kategoriler okunamadı:', error.message);
+      return getSqliteActiveCategories();
+    }
+    return data || [];
+  } catch (error) {
+    console.warn('Kategoriler okunamadı:', error?.message || String(error));
+    return getSqliteActiveCategories();
   }
-  return data || [];
 }
 
 async function getCategoryBySlug(slug) {
@@ -358,18 +379,25 @@ async function getCategoryBySlug(slug) {
     return sqlite.prepare('SELECT * FROM categories WHERE slug = ? AND active = 1').get(slug);
   }
 
-  const { data, error } = await supabase
-    .from('categories')
-    .select('*')
-    .eq('slug', slug)
-    .eq('active', true)
-    .maybeSingle();
+  try {
+    const { data, error } = await supabase
+      .from('categories')
+      .select('*')
+      .eq('slug', slug)
+      .eq('active', true)
+      .maybeSingle();
 
-  if (error) {
-    console.warn('Kategori bulunamadı:', error.message);
-    return null;
+    if (error) {
+      console.warn('Kategori bulunamadı:', error.message);
+      if (!ensureSqliteFallback()) return null;
+      return sqlite.prepare('SELECT * FROM categories WHERE slug = ? AND active = 1').get(slug) || null;
+    }
+    return data || null;
+  } catch (error) {
+    console.warn('Kategori bulunamadı:', error?.message || String(error));
+    if (!ensureSqliteFallback()) return null;
+    return sqlite.prepare('SELECT * FROM categories WHERE slug = ? AND active = 1').get(slug) || null;
   }
-  return data || null;
 }
 
 async function addCategory(name) {
@@ -483,50 +511,60 @@ async function updateProduct({ id, categoryId, name, description, price, imagePa
 
 async function getProductsByCategory(categoryId, options = {}) {
   const limit = Number.isFinite(options.limit) ? options.limit : null;
-  if (!useSupabase) {
+  const getSqliteProducts = () => {
+    if (!ensureSqliteFallback()) return [];
     if (!limit) {
       return sqlite.prepare('SELECT * FROM products WHERE category_id = ? AND active = 1 ORDER BY sort_order ASC, id DESC').all(categoryId);
     }
     return sqlite
       .prepare('SELECT * FROM products WHERE category_id = ? AND active = 1 ORDER BY sort_order ASC, id DESC LIMIT ?')
       .all(categoryId, limit);
+  };
+
+  if (!useSupabase) {
+    return getSqliteProducts();
   }
 
-  let query = supabase
-    .from('products')
-    .select('*')
-    .eq('category_id', categoryId)
-    .eq('active', true)
-    .order('sort_order', { ascending: true })
-    .order('id', { ascending: false });
-
-  if (limit) {
-    query = query.range(0, limit - 1);
-  }
-
-  const { data, error } = await query;
-
-  if (error) {
-    console.warn('Ürünler alınamadı (sort_order):', error.message);
-    let fallbackQuery = supabase
+  try {
+    let query = supabase
       .from('products')
       .select('*')
       .eq('category_id', categoryId)
       .eq('active', true)
+      .order('sort_order', { ascending: true })
       .order('id', { ascending: false });
 
     if (limit) {
-      fallbackQuery = fallbackQuery.range(0, limit - 1);
+      query = query.range(0, limit - 1);
     }
 
-    const fallback = await fallbackQuery;
-    if (fallback.error) {
-      console.warn('Ürünler alınamadı:', fallback.error.message);
-      return [];
+    const { data, error } = await query;
+
+    if (error) {
+      console.warn('Ürünler alınamadı (sort_order):', error.message);
+      let fallbackQuery = supabase
+        .from('products')
+        .select('*')
+        .eq('category_id', categoryId)
+        .eq('active', true)
+        .order('id', { ascending: false });
+
+      if (limit) {
+        fallbackQuery = fallbackQuery.range(0, limit - 1);
+      }
+
+      const fallback = await fallbackQuery;
+      if (fallback.error) {
+        console.warn('Ürünler alınamadı:', fallback.error.message);
+        return getSqliteProducts();
+      }
+      return fallback.data || [];
     }
-    return fallback.data || [];
+    return data || [];
+  } catch (error) {
+    console.warn('Ürünler alınamadı:', error?.message || String(error));
+    return getSqliteProducts();
   }
-  return data || [];
 }
 
 async function getAllProducts(options = {}) {

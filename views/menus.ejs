@@ -9,7 +9,6 @@
 </section>
 
 <nav class="menu-filters">
-  <a class="menu-filter <%= selectedSlug === 'all' ? 'active' : '' %>" href="/menus">Tümü</a>
   <% categories.forEach((category) => { %>
     <a class="menu-filter <%= selectedSlug === category.slug ? 'active' : '' %>" href="/menus?kategori=<%= category.slug %>"><%= category.name %></a>
   <% }) %>
