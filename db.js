@@ -434,6 +434,34 @@ async function deleteCategory(id) {
   }
 }
 
+async function updateCategoryOrder(ids) {
+  if (!Array.isArray(ids) || ids.length === 0) {
+    return { ok: false, error: 'empty_order' };
+  }
+  const updates = ids.map((id, index) => ({
+    id: Number(id),
+    sort_order: index + 1
+  }));
+
+  if (!useSupabase) {
+    const update = sqlite.prepare('UPDATE categories SET sort_order = ? WHERE id = ?');
+    const transaction = sqlite.transaction((rows) => {
+      rows.forEach((row) => update.run(row.sort_order, row.id));
+    });
+    transaction(updates);
+    return { ok: true };
+  }
+
+  for (const row of updates) {
+    const { error } = await supabase.from('categories').update({ sort_order: row.sort_order }).eq('id', row.id);
+    if (error) {
+      console.warn('Kategori sırası güncellenemedi:', error.message);
+      return { ok: false, error: error.message };
+    }
+  }
+  return { ok: true };
+}
+
 async function addProduct({ categoryId, name, description, price, imagePath }) {
   const sortOrder = await getNextProductSortOrder();
   if (!useSupabase) {
@@ -835,6 +863,7 @@ module.exports = {
   getCategoryBySlug,
   addCategory,
   deleteCategory,
+  updateCategoryOrder,
   addProduct,
   deleteProduct,
   getProductById,

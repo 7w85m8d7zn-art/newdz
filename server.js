@@ -577,6 +577,23 @@ app.post('/admin/categories/:id/delete', async (req, res) => {
   res.redirect(buildNoticeUrl('/admin/categories', message));
 });
 
+app.post('/admin/categories/reorder', async (req, res) => {
+  if (!req.isAdmin) {
+    return res.status(401).json({ ok: false, error: 'unauthorized' });
+  }
+  const orderRaw = Array.isArray(req.body.order) ? req.body.order : [];
+  const order = orderRaw.map((id) => Number(id)).filter((id) => Number.isFinite(id));
+  if (order.length === 0) {
+    return res.status(400).json({ ok: false, error: 'empty_order' });
+  }
+  const result = await db.updateCategoryOrder(order);
+  if (!result?.ok) {
+    return res.status(500).json({ ok: false, error: result?.error || 'update_failed' });
+  }
+  invalidateMenuCache();
+  return res.json({ ok: true });
+});
+
 app.get('/admin/products', async (req, res) => {
   const categories = await db.getCategories();
   const page = Math.max(1, Number(req.query.page) || 1);
