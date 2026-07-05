@@ -3168,7 +3168,7 @@ body.admin-body .toast-container {
 .menu-body .header-inner {
   flex-wrap: nowrap;
   justify-content: flex-start;
-  gap: 0.7rem;
+  gap: 0.55rem;
 }
 
 .menu-body .logo {
@@ -3182,6 +3182,7 @@ body.admin-body .toast-container {
   place-items: center;
   flex: 0 0 auto;
   padding: 0;
+  margin-left: -0.2rem;
   border-radius: 999px;
   border: 1px solid rgba(245, 193, 79, 0.28);
   background: rgba(245, 193, 79, 0.08);
