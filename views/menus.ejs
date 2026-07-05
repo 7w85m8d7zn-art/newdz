@@ -5,16 +5,17 @@
 
 <section class="section-header menu-hero" data-menu-hero>
   <div>
-    <p class="eyebrow">Dondurmacı Zeki</p>
+    <div class="menu-kicker-row">
+      <a class="menu-back <%= initialSlug === 'all' ? 'is-hidden' : '' %>" href="/menus" aria-label="Menülere geri dön" data-menu-back>
+        <span aria-hidden="true">←</span>
+      </a>
+      <p class="eyebrow">Dondurmacı Zeki</p>
+    </div>
     <h1 data-menu-title><%= initialSection?.category?.name || 'Menüler' %></h1>
     <p class="subtitle" data-menu-subtitle>
       <%= initialSection ? 'Seçili kategorideki ürünler.' : 'Önce bir kategori seç, ardından içindeki lezzetleri keşfet.' %>
     </p>
   </div>
-  <a class="btn ghost menu-back <%= initialSlug === 'all' ? 'is-hidden' : '' %>" href="/menus" aria-label="Menülere geri dön" data-menu-back>
-    <span aria-hidden="true">←</span>
-    <span>Geri</span>
-  </a>
 </section>
 
 <% if (sections.length === 0) { %>
