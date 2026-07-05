@@ -2288,11 +2288,13 @@ body.admin-body .toast-container {
   }
 
   .menu-body .menu-filters {
-    width: fit-content;
-    max-width: min(100%, 760px);
+    width: 100%;
+    max-width: 100%;
     margin-left: auto;
-    margin-right: 0;
-    justify-content: flex-end;
+    margin-right: auto;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    justify-content: flex-start;
   }
 
   .home-content {
@@ -3402,6 +3404,7 @@ body.admin-body .toast-container {
   border-color: rgba(255, 255, 255, 0.08);
   color: rgba(255, 255, 255, 0.9);
   box-shadow: none;
+  flex: 0 0 auto;
 }
 
 .menu-body .menu-filter.active {
@@ -3511,6 +3514,15 @@ body.admin-body .toast-container {
 @media (min-width: 1024px) {
   .menu-category-grid.is-active {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .menu-body .menu-filters {
+    gap: 0.65rem;
+    justify-content: center;
+  }
+
+  .menu-body .menu-filter {
+    padding: 0.55rem 1.05rem;
   }
 
   .menu-body .site-footer {
