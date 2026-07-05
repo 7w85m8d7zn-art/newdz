@@ -2287,6 +2287,14 @@ body.admin-body .toast-container {
     overflow-x: visible;
   }
 
+  .menu-body .menu-filters {
+    width: fit-content;
+    max-width: min(100%, 760px);
+    margin-left: auto;
+    margin-right: 0;
+    justify-content: flex-end;
+  }
+
   .home-content {
     padding: 3rem 1.5rem;
   }
@@ -3159,6 +3167,8 @@ body.admin-body .toast-container {
 
 .menu-body .header-inner {
   flex-wrap: nowrap;
+  justify-content: flex-start;
+  gap: 0.7rem;
 }
 
 .menu-body .logo {
