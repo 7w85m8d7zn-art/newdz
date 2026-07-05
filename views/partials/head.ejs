@@ -35,6 +35,11 @@
 <body class="<%= typeof bodyClass !== 'undefined' ? bodyClass : '' %>">
   <header class="site-header">
     <div class="container header-inner">
+      <% if (bodyClassSafe.includes('menu-body')) { %>
+        <a class="header-back <%= typeof menuBackVisible !== 'undefined' && menuBackVisible ? '' : 'is-hidden' %>" href="/menus" aria-label="Menülere geri dön" data-menu-back>
+          <span aria-hidden="true">←</span>
+        </a>
+      <% } %>
       <a class="logo" href="/">Dondurmacı Zeki</a>
     </div>
   </header>

@@ -1,14 +1,10 @@
-<%- include('partials/head', { bodyClass: 'menu-body' }) %>
-
 <% const initialSlug = selectedSlug || 'all'; %>
 <% const initialSection = sections.find((section) => section.category.slug === initialSlug); %>
+<%- include('partials/head', { bodyClass: 'menu-body', menuBackVisible: initialSlug !== 'all' }) %>
 
 <section class="section-header menu-hero" data-menu-hero>
   <div>
     <div class="menu-kicker-row">
-      <a class="menu-back <%= initialSlug === 'all' ? 'is-hidden' : '' %>" href="/menus" aria-label="Menülere geri dön" data-menu-back>
-        <span aria-hidden="true">←</span>
-      </a>
       <p class="eyebrow">Dondurmacı Zeki</p>
     </div>
     <h1 data-menu-title><%= initialSection?.category?.name || 'Menüler' %></h1>
@@ -89,7 +85,7 @@
   (function () {
     const title = document.querySelector('[data-menu-title]');
     const subtitle = document.querySelector('[data-menu-subtitle]');
-    const back = document.querySelector('[data-menu-back]');
+    const backLinks = Array.from(document.querySelectorAll('[data-menu-back]'));
     const categoryView = document.querySelector('[data-menu-categories]');
     const detailView = document.querySelector('[data-menu-detail]');
     const panels = Array.from(document.querySelectorAll('[data-menu-panel]'));
@@ -103,7 +99,7 @@
 
       categoryView?.classList.toggle('is-active', isAll);
       detailView?.classList.toggle('is-active', !isAll);
-      back?.classList.toggle('is-hidden', isAll);
+      backLinks.forEach((back) => back.classList.toggle('is-hidden', isAll));
 
       panels.forEach((item) => {
         item.classList.toggle('is-active', !isAll && item === panel);
@@ -139,9 +135,11 @@
       });
     });
 
-    back?.addEventListener('click', (event) => {
-      event.preventDefault();
-      setActiveMenu('all');
+    backLinks.forEach((back) => {
+      back.addEventListener('click', (event) => {
+        event.preventDefault();
+        setActiveMenu('all');
+      });
     });
 
     window.addEventListener('popstate', () => {
