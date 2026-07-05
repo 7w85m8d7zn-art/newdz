@@ -3166,28 +3166,34 @@ body.admin-body .toast-container {
 }
 
 .menu-body .header-inner {
+  position: relative;
   flex-wrap: nowrap;
-  justify-content: flex-start;
-  gap: 0.55rem;
+  justify-content: center;
+  gap: 0;
+  min-height: 44px;
 }
 
 .menu-body .logo {
   color: #fff;
+  padding-left: 1.8rem;
 }
 
 .header-back {
+  position: absolute;
+  left: 0;
+  top: 50%;
   width: 32px;
   height: 32px;
   display: inline-grid;
   place-items: center;
   flex: 0 0 auto;
   padding: 0;
-  margin-left: -0.2rem;
   border-radius: 999px;
   border: 1px solid rgba(245, 193, 79, 0.28);
   background: rgba(245, 193, 79, 0.08);
   color: #f5c14f;
   box-shadow: none;
+  transform: translateY(-50%);
   transition: background 0.14s ease, border-color 0.14s ease, transform 0.14s ease;
 }
 
@@ -3199,7 +3205,7 @@ body.admin-body .toast-container {
 .header-back:hover {
   background: rgba(245, 193, 79, 0.14);
   border-color: rgba(245, 193, 79, 0.45);
-  transform: translateX(-1px);
+  transform: translateY(-50%) translateX(-1px);
 }
 
 .header-back.is-hidden {
@@ -3497,24 +3503,39 @@ body.admin-body .toast-container {
 
 @media (max-width: 720px) {
   .menu-body .container.page {
-    width: min(100% - 24px, 520px);
+    width: min(100% - 32px, 460px);
   }
 
   .menu-hero {
-    margin-top: 1rem;
+    margin-top: 0.85rem;
+    text-align: center;
   }
 
   .menu-hero h1 {
-    font-size: clamp(2.1rem, 13vw, 3.6rem);
+    font-size: clamp(2rem, 11vw, 3rem);
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+
+  .menu-hero .subtitle {
+    max-width: 22rem;
+    margin-left: auto;
+    margin-right: auto;
+    font-size: 0.98rem;
   }
 
   .menu-category-grid {
     grid-template-columns: 1fr;
+    gap: 0.85rem;
   }
 
   .menu-category-card {
     min-height: 155px;
-    border-radius: 20px;
+    border-radius: 18px;
+  }
+
+  .menu-category-content strong {
+    font-size: clamp(1.25rem, 8vw, 1.8rem);
   }
 
   .menu-body .menu-filters {
