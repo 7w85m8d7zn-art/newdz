@@ -3227,7 +3227,7 @@ body.admin-body .toast-container {
 .menu-hero {
   margin: clamp(0.75rem, 2vh, 1.4rem) 0 clamp(0.9rem, 2vh, 1.35rem);
   align-items: center;
-  text-align: center;
+  text-align: left;
 }
 
 .menu-hero .eyebrow {
@@ -3238,7 +3238,7 @@ body.admin-body .toast-container {
 .menu-kicker-row {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 0.55rem;
   min-height: 28px;
   margin-bottom: 0.25rem;
@@ -3254,8 +3254,8 @@ body.admin-body .toast-container {
 .menu-hero .subtitle {
   color: rgba(255, 255, 255, 0.72);
   max-width: 560px;
-  margin-left: auto;
-  margin-right: auto;
+  margin-left: 0;
+  margin-right: 0;
 }
 
 .menu-view {
