@@ -3358,10 +3358,10 @@ body.admin-body .toast-container {
   position: sticky;
   top: 64px;
   z-index: 8;
-  margin-bottom: 1.2rem;
-  padding: 0.7rem 0;
-  background: linear-gradient(180deg, rgba(20, 15, 13, 0.96), rgba(20, 15, 13, 0.72));
-  backdrop-filter: blur(10px);
+  margin-bottom: 0.95rem;
+  padding: 0.35rem 0 0.6rem;
+  background: linear-gradient(180deg, rgba(20, 15, 13, 0.42), rgba(20, 15, 13, 0));
+  backdrop-filter: blur(6px);
   overflow-x: auto;
   scrollbar-width: none;
 }
@@ -3372,16 +3372,17 @@ body.admin-body .toast-container {
 }
 
 .menu-body .menu-filter {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.14);
-  color: rgba(255, 255, 255, 0.86);
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.9);
+  box-shadow: none;
 }
 
 .menu-body .menu-filter.active {
-  background: #f02626;
-  border-color: rgba(255, 255, 255, 0.18);
+  background: linear-gradient(135deg, #f02626 0%, #ff4a2d 100%);
+  border-color: rgba(255, 255, 255, 0.14);
   color: #fff;
-  box-shadow: 0 14px 28px rgba(240, 38, 38, 0.28);
+  box-shadow: 0 10px 20px rgba(240, 38, 38, 0.22);
 }
 
 .menu-section .menu-product-list {
@@ -3505,10 +3506,10 @@ body.admin-body .toast-container {
 
   .menu-body .menu-filters {
     top: 56px;
-    margin-left: -12px;
-    margin-right: -12px;
-    padding-left: 12px;
-    padding-right: 12px;
+    margin-left: 0;
+    margin-right: 0;
+    padding-left: 0;
+    padding-right: 0;
   }
 
   .menu-product-list {
