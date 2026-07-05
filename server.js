@@ -79,8 +79,9 @@ const upload = multer({
 
 const ADMIN_PAGE_SIZE = Math.min(50, Math.max(10, Number(process.env.ADMIN_PAGE_SIZE || 20)));
 const MENU_ITEMS_PER_CATEGORY = Math.min(20, Math.max(4, Number(process.env.MENU_ITEMS_PER_CATEGORY || 8)));
-const MENU_CACHE_TTL_MS = Number(process.env.MENU_CACHE_TTL_MS ?? (isVercel ? 0 : 20000));
-const SETTINGS_CACHE_TTL_MS = Number(process.env.SETTINGS_CACHE_TTL_MS ?? (isVercel ? 0 : 5000));
+const MENU_CACHE_TTL_MS = Number(process.env.MENU_CACHE_TTL_MS ?? 5 * 60 * 1000);
+const SETTINGS_CACHE_TTL_MS = Number(process.env.SETTINGS_CACHE_TTL_MS ?? 60 * 1000);
+const STATS_CACHE_TTL_MS = Number(process.env.STATS_CACHE_TTL_MS ?? 30 * 1000);
 
 const formatPrice = (price) => {
   const value = String(price || '').trim();
@@ -175,9 +176,21 @@ const getCached = async (key, ttlMs, fetcher) => {
   if (entry?.value && entry.expires > now) {
     return entry.value;
   }
-  const value = await fetcher();
-  cacheStore[key] = { value, expires: now + ttlMs };
-  return value;
+  if (entry?.pending) {
+    return entry.value || entry.pending;
+  }
+  const pending = Promise.resolve()
+    .then(fetcher)
+    .then((value) => {
+      cacheStore[key] = { value, expires: Date.now() + ttlMs, pending: null };
+      return value;
+    })
+    .catch((error) => {
+      cacheStore[key] = { value: entry?.value || null, expires: 0, pending: null };
+      throw error;
+    });
+  cacheStore[key] = { value: entry?.value || null, expires: entry?.expires || 0, pending };
+  return entry?.value || pending;
 };
 
 const invalidateCache = (key) => {
@@ -192,7 +205,7 @@ const invalidateMenuCache = () => {
 };
 
 const getCachedStats = async () =>
-  getCached('stats', 15000, async () => {
+  getCached('stats', STATS_CACHE_TTL_MS, async () => {
     const stats = await db.getScanStats();
     const sevenTotal = stats.recent.reduce((sum, item) => sum + item.count, 0);
     const catalog = await db.getCatalogStats();
@@ -212,7 +225,7 @@ const getCachedMenuCategories = async () =>
   getCached('menuCategories', MENU_CACHE_TTL_MS, async () => db.getCategories());
 
 const getCachedAllMenuProducts = async () =>
-  getCached('menuAllProducts', MENU_CACHE_TTL_MS, async () => db.getAllProducts());
+  getCached('menuAllProducts', MENU_CACHE_TTL_MS, async () => db.getMenuProducts());
 
 const getCachedMenuProducts = async (categoryId, limit) => {
   if (!MENU_CACHE_TTL_MS || MENU_CACHE_TTL_MS <= 0) {
@@ -331,7 +344,7 @@ function requireAdmin(req, res, next) {
 app.get('/', async (req, res) => {
   const settings = await getCached('settings', SETTINGS_CACHE_TTL_MS, () => db.getSettings());
   const pageTitle = settings.hero_title || settings.welcome_title;
-  res.set('Cache-Control', 'no-store');
+  res.set('Cache-Control', 'public, max-age=30, s-maxage=300, stale-while-revalidate=600');
   const preloadImages = [settings.background_image, settings.logo_image].filter(Boolean);
   const preconnectOrigins = Array.from(
     new Set(
@@ -350,9 +363,11 @@ app.get('/', async (req, res) => {
 });
 
 app.get('/menus', async (req, res) => {
-  res.set('Cache-Control', 'no-store');
-  const categories = await getCachedMenuCategories();
-  const allProducts = await getCachedAllMenuProducts();
+  res.set('Cache-Control', 'public, max-age=30, s-maxage=300, stale-while-revalidate=600');
+  const [categories, allProducts] = await Promise.all([
+    getCachedMenuCategories(),
+    getCachedAllMenuProducts()
+  ]);
   const productsByCategory = allProducts.reduce((map, product) => {
     if (product.active === false || product.active === 0) return map;
     const key = Number(product.category_id);

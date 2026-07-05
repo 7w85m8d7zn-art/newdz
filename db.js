@@ -660,6 +660,31 @@ async function getAllProducts(options = {}) {
   return includeTotal ? { products, total: count || 0 } : products;
 }
 
+async function getMenuProducts() {
+  if (!useSupabase) {
+    return sqlite.prepare(`
+      SELECT id, category_id, name, description, price, image_path, sort_order, active
+      FROM products
+      WHERE active = 1
+      ORDER BY sort_order ASC, id DESC
+    `).all();
+  }
+
+  const { data, error } = await supabase
+    .from('products')
+    .select('id, category_id, name, description, price, image_path, sort_order, active')
+    .eq('active', true)
+    .order('sort_order', { ascending: true })
+    .order('id', { ascending: false });
+
+  if (error) {
+    console.warn('Menü ürünleri alınamadı:', error.message);
+    return [];
+  }
+
+  return data || [];
+}
+
 async function getNextProductSortOrder() {
   if (!useSupabase) {
     const row = sqlite.prepare('SELECT MIN(sort_order) AS min FROM products').get();
@@ -816,6 +841,7 @@ module.exports = {
   updateProduct,
   getProductsByCategory,
   getAllProducts,
+  getMenuProducts,
   updateProductOrder,
   logQrScan,
   getScanStats,
