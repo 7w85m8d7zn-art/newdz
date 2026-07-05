@@ -12,7 +12,10 @@
     <% } %>
   </div>
   <% if (selectedSlug !== 'all') { %>
-    <a class="btn ghost menu-back" href="/menus">Tüm Menüler</a>
+    <a class="btn ghost menu-back" href="/menus" aria-label="Menülere geri dön">
+      <span aria-hidden="true">←</span>
+      <span>Geri</span>
+    </a>
   <% } %>
 </section>
 
@@ -71,5 +74,20 @@
     </section>
   <% }) %>
 <% } %>
+
+<script>
+  (function () {
+    const prefetched = new Set();
+    const prefetch = (link) => {
+      if (!link || !link.href || prefetched.has(link.href)) return;
+      prefetched.add(link.href);
+      fetch(link.href, { credentials: 'same-origin', priority: 'low' }).catch(() => {});
+    };
+    document.querySelectorAll('.menu-category-card, .menu-filter, .menu-back').forEach((link) => {
+      link.addEventListener('pointerenter', () => prefetch(link), { passive: true });
+      link.addEventListener('touchstart', () => prefetch(link), { passive: true });
+    });
+  })();
+</script>
 
 <%- include('partials/footer') %>
