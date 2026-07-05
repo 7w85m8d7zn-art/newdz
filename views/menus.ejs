@@ -36,13 +36,13 @@
       <% products.forEach((product) => { %>
         <div class="product-card">
           <% if (product.image_path) { %>
-            <img class="product-image" src="<%= product.image_path %>" alt="<%= product.name %>" loading="lazy" />
+            <img class="product-image" src="<%= product.image_path %>" alt="<%= product.name %>" loading="lazy" decoding="async" />
           <% } %>
           <div class="product-info">
             <div class="product-meta">
               <h3><%= product.name %></h3>
               <% if (product.price) { %>
-                <span class="price">₺ <%= product.price %></span>
+                <span class="price"><%= formatPrice(product.price) %></span>
               <% } %>
             </div>
             <% if (product.description) { %>

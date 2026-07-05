@@ -69,7 +69,7 @@
               <% } %>
             </div>
             <div><%= product.category_name %></div>
-            <div><%= product.price ? `₺ ${product.price}` : '-' %></div>
+            <div><%= product.price ? formatPrice(product.price) : '-' %></div>
             <div class="actions">
               <form method="POST" action="/admin/products/<%= product.id %>/delete" data-confirm="Silmek istiyor musunuz?">
                 <button class="btn ghost" type="submit">Sil</button>

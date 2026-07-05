@@ -2975,6 +2975,159 @@ body.admin-body .toast-container {
   }
 }
 
+.home-content {
+  padding: clamp(1rem, 3vh, 2rem) 1rem;
+}
+
+.home-wrapper {
+  gap: clamp(0.75rem, 2vh, 1.15rem);
+}
+
+.home-main-card {
+  max-width: 640px;
+}
+
+.home-branch-grid {
+  max-width: 500px;
+}
+
+.home-card {
+  border-radius: 24px;
+  padding: clamp(1.15rem, 2.8vh, 1.9rem) clamp(1rem, 3vw, 1.7rem);
+}
+
+.home-avatar {
+  width: clamp(68px, 10vh, 92px);
+  height: clamp(68px, 10vh, 92px);
+  margin-bottom: clamp(0.6rem, 1.5vh, 0.95rem);
+}
+
+.home-avatar-inner {
+  width: 70%;
+  height: 70%;
+}
+
+.home-title {
+  font-size: clamp(1.95rem, 4.5vw, 3.2rem);
+  line-height: 1.05;
+  margin-bottom: 0.35rem;
+}
+
+.home-slogan {
+  margin-top: 0.35rem;
+  margin-bottom: 0;
+  font-size: clamp(0.92rem, 1.8vw, 1.05rem);
+  line-height: 1.45;
+}
+
+.home-pills,
+.home-social,
+.home-powered {
+  margin-top: clamp(0.75rem, 1.8vh, 1rem);
+}
+
+.home-pill {
+  min-height: 42px;
+  padding: 0.5rem 1rem;
+}
+
+.social-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+}
+
+.home-powered {
+  font-size: 0.68rem;
+}
+
+.branch-header {
+  margin-bottom: 1rem;
+}
+
+.branch-header h3 {
+  font-size: 1.05rem;
+}
+
+.branch-header p {
+  margin-bottom: 0;
+  line-height: 1.45;
+}
+
+.branch-actions .btn {
+  min-height: 44px;
+  padding: 0.72rem 1.15rem;
+}
+
+@media (max-width: 720px) {
+  .home-content {
+    padding: 0.85rem 0.8rem 1rem;
+  }
+
+  .home-wrapper {
+    gap: 0.7rem;
+  }
+
+  .home-card {
+    padding: 1rem 0.95rem;
+    border-radius: 20px;
+  }
+
+  .home-main-card {
+    max-width: 100%;
+  }
+
+  .home-title {
+    font-size: clamp(1.65rem, 8vw, 2.25rem);
+  }
+
+  .home-slogan {
+    font-size: 0.88rem;
+  }
+
+  .home-pills {
+    gap: 0.45rem;
+  }
+
+  .home-pill {
+    min-height: 38px;
+    padding: 0.45rem 0.75rem;
+    font-size: 0.9rem;
+  }
+
+  .home-social {
+    gap: 0.55rem;
+  }
+
+  .social-btn {
+    width: 42px;
+    height: 42px;
+  }
+
+  .home-powered {
+    letter-spacing: 0.12em;
+    font-size: 0.62rem;
+  }
+
+  .branch-header {
+    gap: 0.5rem;
+    margin-bottom: 0.8rem;
+  }
+
+  .branch-tag {
+    display: none;
+  }
+
+  .branch-actions {
+    gap: 0.55rem;
+  }
+
+  .branch-actions .btn {
+    min-height: 42px;
+    padding: 0.65rem 0.9rem;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   * {
     animation: none !important;

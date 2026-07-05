@@ -82,14 +82,22 @@ const MENU_ITEMS_PER_CATEGORY = Math.min(20, Math.max(4, Number(process.env.MENU
 const MENU_CACHE_TTL_MS = Number(process.env.MENU_CACHE_TTL_MS ?? (isVercel ? 0 : 20000));
 const SETTINGS_CACHE_TTL_MS = Number(process.env.SETTINGS_CACHE_TTL_MS ?? (isVercel ? 0 : 5000));
 
+const formatPrice = (price) => {
+  const value = String(price || '').trim();
+  if (!value) return '';
+  return /^[₺₸$€£]/.test(value) ? value : `₺ ${value}`;
+};
+
+app.locals.formatPrice = formatPrice;
+
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
 app.use(compression());
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, 'public'), { maxAge: '1h' }));
-app.use('/uploads', express.static(uploadsDir, { maxAge: '5m' }));
+app.use(express.static(path.join(__dirname, 'public'), { maxAge: '1d' }));
+app.use('/uploads', express.static(uploadsDir, { maxAge: '30d', immutable: true }));
 
 let storageReadyPromise = null;
 const ensureStorageBucket = async () => {
@@ -153,6 +161,7 @@ const cacheStore = {
   settings: { value: null, expires: 0 },
   stats: { value: null, expires: 0 },
   menuCategories: { value: null, expires: 0 },
+  menuAllProducts: { value: null, expires: 0 },
   menuProducts: new Map(),
   qr: new Map()
 };
@@ -178,6 +187,7 @@ const invalidateCache = (key) => {
 
 const invalidateMenuCache = () => {
   cacheStore.menuCategories = { value: null, expires: 0 };
+  cacheStore.menuAllProducts = { value: null, expires: 0 };
   cacheStore.menuProducts.clear();
 };
 
@@ -200,6 +210,9 @@ const getCachedQr = async (targetUrl) => {
 
 const getCachedMenuCategories = async () =>
   getCached('menuCategories', MENU_CACHE_TTL_MS, async () => db.getCategories());
+
+const getCachedAllMenuProducts = async () =>
+  getCached('menuAllProducts', MENU_CACHE_TTL_MS, async () => db.getAllProducts());
 
 const getCachedMenuProducts = async (categoryId, limit) => {
   if (!MENU_CACHE_TTL_MS || MENU_CACHE_TTL_MS <= 0) {
@@ -339,6 +352,14 @@ app.get('/', async (req, res) => {
 app.get('/menus', async (req, res) => {
   res.set('Cache-Control', 'no-store');
   const categories = await getCachedMenuCategories();
+  const allProducts = await getCachedAllMenuProducts();
+  const productsByCategory = allProducts.reduce((map, product) => {
+    if (product.active === false || product.active === 0) return map;
+    const key = Number(product.category_id);
+    if (!map.has(key)) map.set(key, []);
+    map.get(key).push(product);
+    return map;
+  }, new Map());
   const selectedSlug = req.query.kategori;
 
   if (selectedSlug) {
@@ -348,18 +369,14 @@ app.get('/menus', async (req, res) => {
     if (!category) {
       return res.status(404).render('not_found', { pageTitle: 'Bulunamadı' });
     }
-    const products = await getCachedMenuProducts(category.id);
+    const products = productsByCategory.get(Number(category.id)) || [];
     if (products.length === 0) {
       return res.redirect('/menus');
     }
 
-    const categoriesWithProducts = [];
-    for (const item of categories) {
-      const itemProducts = await getCachedMenuProducts(item.id, 1);
-      if (itemProducts.length > 0) {
-        categoriesWithProducts.push(item);
-      }
-    }
+    const categoriesWithProducts = categories.filter((item) =>
+      (productsByCategory.get(Number(item.id)) || []).length > 0
+    );
 
     return res.render('menus', {
       pageTitle: 'Menüler',
@@ -369,15 +386,12 @@ app.get('/menus', async (req, res) => {
     });
   }
 
-  const sections = [];
-  const categoriesWithProducts = [];
-  for (const category of categories) {
-    const products = await getCachedMenuProducts(category.id, MENU_ITEMS_PER_CATEGORY);
-    if (products.length > 0) {
-      categoriesWithProducts.push(category);
-      sections.push({ category, products });
-    }
-  }
+  const categoryProducts = categories.map((category) => ({
+    category,
+    products: (productsByCategory.get(Number(category.id)) || []).slice(0, MENU_ITEMS_PER_CATEGORY)
+  }));
+  const sections = categoryProducts.filter((item) => item.products.length > 0);
+  const categoriesWithProducts = sections.map((item) => item.category);
 
   return res.render('menus', {
     pageTitle: 'Menüler',
