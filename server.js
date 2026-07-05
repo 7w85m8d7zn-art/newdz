@@ -375,11 +375,17 @@ app.get('/menus', async (req, res) => {
     map.get(key).push(product);
     return map;
   }, new Map());
-  const selectedSlug = req.query.kategori;
+  const selectedSlug = req.query.kategori?.toString();
+  const categoryProducts = categories.map((category) => ({
+    category,
+    products: productsByCategory.get(Number(category.id)) || []
+  }));
+  const sections = categoryProducts.filter((item) => item.products.length > 0);
+  const categoriesWithProducts = sections.map((item) => item.category);
 
   if (selectedSlug) {
     const category =
-      categories.find((item) => item.slug === selectedSlug) ||
+      categoriesWithProducts.find((item) => item.slug === selectedSlug) ||
       (await db.getCategoryBySlug(selectedSlug));
     if (!category) {
       return res.status(404).render('not_found', { pageTitle: 'Bulunamadı' });
@@ -388,30 +394,12 @@ app.get('/menus', async (req, res) => {
     if (products.length === 0) {
       return res.redirect('/menus');
     }
-
-    const categoriesWithProducts = categories.filter((item) =>
-      (productsByCategory.get(Number(item.id)) || []).length > 0
-    );
-
-    return res.render('menus', {
-      pageTitle: 'Menüler',
-      categories: categoriesWithProducts,
-      selectedSlug,
-      sections: [{ category, products }]
-    });
   }
-
-  const categoryProducts = categories.map((category) => ({
-    category,
-    products: productsByCategory.get(Number(category.id)) || []
-  }));
-  const sections = categoryProducts.filter((item) => item.products.length > 0);
-  const categoriesWithProducts = sections.map((item) => item.category);
 
   return res.render('menus', {
     pageTitle: 'Menüler',
     categories: categoriesWithProducts,
-    selectedSlug: 'all',
+    selectedSlug: selectedSlug || 'all',
     sections
   });
 });

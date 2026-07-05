@@ -1,22 +1,20 @@
 <%- include('partials/head', { bodyClass: 'menu-body' }) %>
 
-<section class="section-header menu-hero">
+<% const initialSlug = selectedSlug || 'all'; %>
+<% const initialSection = sections.find((section) => section.category.slug === initialSlug); %>
+
+<section class="section-header menu-hero" data-menu-hero>
   <div>
     <p class="eyebrow">Dondurmacı Zeki</p>
-    <% if (selectedSlug === 'all') { %>
-      <h1>Menüler</h1>
-      <p class="subtitle">Önce bir kategori seç, ardından içindeki lezzetleri keşfet.</p>
-    <% } else { %>
-      <h1><%= sections[0]?.category?.name || 'Menüler' %></h1>
-      <p class="subtitle">Seçili kategorideki ürünler.</p>
-    <% } %>
+    <h1 data-menu-title><%= initialSection?.category?.name || 'Menüler' %></h1>
+    <p class="subtitle" data-menu-subtitle>
+      <%= initialSection ? 'Seçili kategorideki ürünler.' : 'Önce bir kategori seç, ardından içindeki lezzetleri keşfet.' %>
+    </p>
   </div>
-  <% if (selectedSlug !== 'all') { %>
-    <a class="btn ghost menu-back" href="/menus" aria-label="Menülere geri dön">
-      <span aria-hidden="true">←</span>
-      <span>Geri</span>
-    </a>
-  <% } %>
+  <a class="btn ghost menu-back <%= initialSlug === 'all' ? 'is-hidden' : '' %>" href="/menus" aria-label="Menülere geri dön" data-menu-back>
+    <span aria-hidden="true">←</span>
+    <span>Geri</span>
+  </a>
 </section>
 
 <% if (sections.length === 0) { %>
@@ -25,37 +23,48 @@
   </div>
 <% } %>
 
-<% if (selectedSlug === 'all') { %>
-  <section class="menu-category-grid" aria-label="Menü kategorileri">
-    <% sections.forEach(({ category, products }, index) => { %>
-      <% const coverImage = products.find((product) => product.image_path)?.image_path; %>
-      <a class="menu-category-card" href="/menus?kategori=<%= category.slug %>" style="--item-index: <%= index %>">
-        <% if (coverImage) { %>
-          <img src="<%= coverImage %>" alt="<%= category.name %>" loading="<%= index < 3 ? 'eager' : 'lazy' %>" decoding="async" />
-        <% } %>
-        <span class="menu-category-shade"></span>
-        <span class="menu-category-content">
-          <span class="menu-category-kicker">Menü</span>
-          <strong><%= category.name %></strong>
-          <span><%= products.length %> ürün</span>
-        </span>
-      </a>
-    <% }) %>
-  </section>
-<% } else { %>
+<section class="menu-category-grid menu-view <%= initialSlug === 'all' ? 'is-active' : '' %>" aria-label="Menü kategorileri" data-menu-categories>
+  <% sections.forEach(({ category, products }, index) => { %>
+    <% const coverImage = products.find((product) => product.image_path)?.image_path; %>
+    <a
+      class="menu-category-card"
+      href="/menus?kategori=<%= category.slug %>"
+      style="--item-index: <%= index %>"
+      data-menu-open="<%= category.slug %>"
+      data-menu-name="<%= category.name %>"
+    >
+      <% if (coverImage) { %>
+        <img src="<%= coverImage %>" alt="<%= category.name %>" loading="<%= index < 3 ? 'eager' : 'lazy' %>" decoding="async" />
+      <% } %>
+      <span class="menu-category-shade"></span>
+      <span class="menu-category-content">
+        <span class="menu-category-kicker">Menü</span>
+        <strong><%= category.name %></strong>
+        <span><%= products.length %> ürün</span>
+      </span>
+    </a>
+  <% }) %>
+</section>
+
+<section class="menu-detail-view menu-view <%= initialSlug !== 'all' ? 'is-active' : '' %>" data-menu-detail>
   <nav class="menu-filters">
     <% categories.forEach((category) => { %>
-      <a class="menu-filter <%= selectedSlug === category.slug ? 'active' : '' %>" href="/menus?kategori=<%= category.slug %>"><%= category.name %></a>
+      <a
+        class="menu-filter <%= initialSlug === category.slug ? 'active' : '' %>"
+        href="/menus?kategori=<%= category.slug %>"
+        data-menu-open="<%= category.slug %>"
+        data-menu-name="<%= category.name %>"
+      ><%= category.name %></a>
     <% }) %>
   </nav>
 
   <% sections.forEach(({ category, products }) => { %>
-    <section class="menu-section">
+    <section class="menu-section menu-panel <%= initialSlug === category.slug ? 'is-active' : '' %>" data-menu-panel="<%= category.slug %>" data-menu-name="<%= category.name %>">
       <div class="product-list menu-product-list">
         <% products.forEach((product, index) => { %>
           <article class="product-card menu-product-card" style="--item-index: <%= index %>">
             <% if (product.image_path) { %>
-              <img class="product-image" src="<%= product.image_path %>" alt="<%= product.name %>" loading="<%= index < 4 ? 'eager' : 'lazy' %>" decoding="async" />
+              <img class="product-image" src="<%= product.image_path %>" alt="<%= product.name %>" loading="<%= initialSlug === category.slug && index < 4 ? 'eager' : 'lazy' %>" decoding="async" />
             <% } %>
             <div class="product-info">
               <div class="product-meta">
@@ -73,19 +82,70 @@
       </div>
     </section>
   <% }) %>
-<% } %>
+</section>
 
 <script>
   (function () {
-    const prefetched = new Set();
-    const prefetch = (link) => {
-      if (!link || !link.href || prefetched.has(link.href)) return;
-      prefetched.add(link.href);
-      fetch(link.href, { credentials: 'same-origin', priority: 'low' }).catch(() => {});
+    const title = document.querySelector('[data-menu-title]');
+    const subtitle = document.querySelector('[data-menu-subtitle]');
+    const back = document.querySelector('[data-menu-back]');
+    const categoryView = document.querySelector('[data-menu-categories]');
+    const detailView = document.querySelector('[data-menu-detail]');
+    const panels = Array.from(document.querySelectorAll('[data-menu-panel]'));
+    const openLinks = Array.from(document.querySelectorAll('[data-menu-open]'));
+    const filters = Array.from(document.querySelectorAll('.menu-filter'));
+
+    const setActiveMenu = (slug, options = {}) => {
+      const isAll = !slug || slug === 'all';
+      const panel = panels.find((item) => item.dataset.menuPanel === slug);
+      if (!isAll && !panel) return;
+
+      categoryView?.classList.toggle('is-active', isAll);
+      detailView?.classList.toggle('is-active', !isAll);
+      back?.classList.toggle('is-hidden', isAll);
+
+      panels.forEach((item) => {
+        item.classList.toggle('is-active', !isAll && item === panel);
+      });
+
+      filters.forEach((item) => {
+        item.classList.toggle('active', !isAll && item.dataset.menuOpen === slug);
+      });
+
+      if (title) {
+        title.textContent = isAll ? 'Menüler' : panel.dataset.menuName;
+      }
+      if (subtitle) {
+        subtitle.textContent = isAll
+          ? 'Önce bir kategori seç, ardından içindeki lezzetleri keşfet.'
+          : 'Seçili kategorideki ürünler.';
+      }
+
+      if (options.push !== false) {
+        const nextUrl = isAll ? '/menus' : `/menus?kategori=${encodeURIComponent(slug)}`;
+        window.history.pushState({ menuSlug: isAll ? 'all' : slug }, '', nextUrl);
+      }
+
+      if (options.scroll !== false) {
+        window.scrollTo({ top: 0, behavior: 'auto' });
+      }
     };
-    document.querySelectorAll('.menu-category-card, .menu-filter, .menu-back').forEach((link) => {
-      link.addEventListener('pointerenter', () => prefetch(link), { passive: true });
-      link.addEventListener('touchstart', () => prefetch(link), { passive: true });
+
+    openLinks.forEach((link) => {
+      link.addEventListener('click', (event) => {
+        event.preventDefault();
+        setActiveMenu(link.dataset.menuOpen);
+      });
+    });
+
+    back?.addEventListener('click', (event) => {
+      event.preventDefault();
+      setActiveMenu('all');
+    });
+
+    window.addEventListener('popstate', () => {
+      const params = new URLSearchParams(window.location.search);
+      setActiveMenu(params.get('kategori') || 'all', { push: false, scroll: false });
     });
   })();
 </script>

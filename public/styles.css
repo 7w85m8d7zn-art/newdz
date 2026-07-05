@@ -3205,11 +3205,32 @@ body.admin-body .toast-container {
   line-height: 1;
 }
 
-.menu-category-grid {
+.menu-back.is-hidden {
+  display: none;
+}
+
+.menu-view {
+  display: none;
+}
+
+.menu-view.is-active {
+  display: block;
+  animation: menuViewIn 0.18s ease both;
+}
+
+.menu-detail-view.is-active {
   display: grid;
+  gap: 1rem;
+}
+
+.menu-category-grid {
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: clamp(0.9rem, 2vw, 1.35rem);
   padding-bottom: 3rem;
+}
+
+.menu-category-grid.is-active {
+  display: grid;
 }
 
 .menu-category-card {
@@ -3343,6 +3364,16 @@ body.admin-body .toast-container {
   gap: clamp(0.85rem, 2vw, 1.25rem);
 }
 
+.menu-panel {
+  display: none;
+  margin-bottom: 2rem;
+}
+
+.menu-panel.is-active {
+  display: block;
+  animation: menuPanelIn 0.18s ease both;
+}
+
 .menu-product-card {
   position: relative;
   flex-direction: column;
@@ -3400,6 +3431,28 @@ body.admin-body .toast-container {
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes menuViewIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes menuPanelIn {
+  from {
+    opacity: 0;
+    transform: translateX(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
   }
 }
 
