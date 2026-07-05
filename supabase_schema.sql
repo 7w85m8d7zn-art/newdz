@@ -32,3 +32,83 @@ create table if not exists qr_scans (
 
 create index if not exists idx_products_category on products(category_id);
 create index if not exists idx_qr_scans_date on qr_scans(scanned_date);
+
+-- Seed data imported from https://www.dondurmacizekikarakopru.com/
+insert into settings (key, value) values
+  ('hero_title', 'Dondurmacı Zeki Karaköprü'),
+  ('welcome_title', 'Dondurmacı Zeki Karaköprü'),
+  ('hero_slogan', 'Nereden geliyorsun? DONDURMACI ZEKİ''den.
+Nereye gidiyorsun? DONDURMACI ZEKİ''ye.'),
+  ('welcome_subtitle', 'Nereden geliyorsun? DONDURMACI ZEKİ''den.
+Nereye gidiyorsun? DONDURMACI ZEKİ''ye.'),
+  ('hours_text', 'Açık: 10:00 - 00:30'),
+  ('phone_text', '0533 792 02 42'),
+  ('instagram_url', 'https://instagram.com/dondurmacizekikarakopru'),
+  ('tiktok_url', 'https://tiktok.com'),
+  ('powered_by', 'POWERED BY AJJANS MEDYA'),
+  ('branch_name', 'Karaköprü Şubesi'),
+  ('branch_address', 'Narlıkuyu, 113. Cd. 37A, Karaköprü/Şanlıurfa'),
+  ('location_url', 'https://share.google/phgGmQtjMDtW0jagg'),
+  ('location_button', 'Konumu Gör'),
+  ('menu_button', 'MENÜYÜ GÖRÜNTÜLE'),
+  ('welcome_button', 'MENÜYÜ GÖRÜNTÜLE'),
+  ('background_image', '/uploads/welcome/1775336795842-36616150.jpg'),
+  ('logo_image', '/uploads/welcome/1775336808850-720706606.png')
+on conflict (key) do update set value = excluded.value;
+
+insert into categories (name, slug, sort_order, active) values
+  ('Baklava (kg)', 'baklava-kg', 1, true),
+  ('Dondurma (Porsiyon)', 'dondurma-porsiyon', 2, true),
+  ('Dondurmalar', 'dondurmalar', 3, true),
+  ('İçecekler', 'icecekler', 4, true),
+  ('Porsiyon Tatlı', 'porsiyon-tatli', 5, true),
+  ('Tepsi Tatlı', 'tepsi-tatli', 6, true)
+on conflict (slug) do update
+set name = excluded.name,
+    sort_order = excluded.sort_order,
+    active = excluded.active;
+
+delete from products
+where category_id in (
+  select id
+  from categories
+  where slug in (
+    'baklava-kg',
+    'dondurma-porsiyon',
+    'dondurmalar',
+    'icecekler',
+    'porsiyon-tatli',
+    'tepsi-tatli'
+  )
+);
+
+insert into products (category_id, name, description, price, image_path, sort_order, active) values
+  ((select id from categories where slug = 'baklava-kg'), 'Şöbiyet', null, '₺ 800', '/uploads/products/1775352002264-42230778.jpg', 1, true),
+  ((select id from categories where slug = 'baklava-kg'), 'Soğuk Baklava', null, '₺ 700', '/uploads/products/1775352102220-397185874.jpg', 2, true),
+  ((select id from categories where slug = 'baklava-kg'), 'Fıstıkzade', null, '₺ 800', '/uploads/products/1775352192913-781672714.jpg', 3, true),
+  ((select id from categories where slug = 'baklava-kg'), 'Sarma', null, '₺ 800', '/uploads/products/1775351896959-327672239.jpg', 4, true),
+  ((select id from categories where slug = 'baklava-kg'), 'Havuç', null, '₺ 800', '/uploads/products/1775352576326-953756009.jpg', 5, true),
+  ((select id from categories where slug = 'baklava-kg'), 'Midye Baklava', null, '₺ 800', '/uploads/products/1775351954460-168408735.jpg', 6, true),
+  ((select id from categories where slug = 'baklava-kg'), 'Fıstıklı Baklava', null, '₺ 700', '/uploads/products/1775351836929-641375552.jpg', 7, true),
+  ((select id from categories where slug = 'dondurma-porsiyon'), 'Sade Dondurma (Porsiyon)', null, '₺ 80', '/uploads/products/1778501844765-495215708.jpg', 8, true),
+  ((select id from categories where slug = 'dondurma-porsiyon'), 'Ballı ve Bademli (Porsiyon)', null, '₺ 120', '/uploads/products/1775410299500-698532887.jpg', 9, true),
+  ((select id from categories where slug = 'dondurma-porsiyon'), 'Meyveli Dondurma Çeşitleri (Porsiyon)', null, '₺ 100', '/uploads/products/1775410376687-808286689.jpg', 10, true),
+  ((select id from categories where slug = 'dondurmalar'), 'Fıstıklı Dondurma', null, '₺ 700', '/uploads/products/1777107566041-992409627.jpg', 11, true),
+  ((select id from categories where slug = 'dondurmalar'), 'Ballı ve Bademli', null, '₺ 700', '/uploads/products/1775410281982-544909720.jpg', 12, true),
+  ((select id from categories where slug = 'dondurmalar'), 'Meyveli Dondurma Çeşitleri', null, '₺ 550', '/uploads/products/1775410360579-322932770.jpg', 13, true),
+  ((select id from categories where slug = 'dondurmalar'), 'Sade Dondurma', null, '₺ 400', '/uploads/products/1775410416485-537600766.jpg', 14, true),
+  ((select id from categories where slug = 'icecekler'), 'Kola, Fanta vs.', null, '₺ 70', '/uploads/products/1776348073457-191780965.jpg', 15, true),
+  ((select id from categories where slug = 'icecekler'), 'Su', null, '₺ 20', '/uploads/products/1775352704784-18959129.jpg', 16, true),
+  ((select id from categories where slug = 'porsiyon-tatli'), 'Şöbiyet (Porsiyon)', null, '₺ 200', '/uploads/products/1775352067281-664904302.jpg', 17, true),
+  ((select id from categories where slug = 'porsiyon-tatli'), 'Soğuk Baklava (Porsiyon)', null, '₺ 150', '/uploads/products/1775352080840-339367027.jpg', 18, true),
+  ((select id from categories where slug = 'porsiyon-tatli'), 'Fıstıkzade (Porsiyon)', null, '₺ 200', '/uploads/products/1775352206664-742719540.jpg', 19, true),
+  ((select id from categories where slug = 'porsiyon-tatli'), 'Sarma (Porsiyon)', null, '₺ 200', '/uploads/products/1775352225547-996122663.jpg', 20, true),
+  ((select id from categories where slug = 'porsiyon-tatli'), 'Havuç (Porsiyon)', null, '₺ 200', '/uploads/products/1775352563396-259570123.jpg', 21, true),
+  ((select id from categories where slug = 'porsiyon-tatli'), 'Midye Baklava (Porsiyon)', null, '₺ 200', '/uploads/products/1775411227394-737029018.jpg', 22, true),
+  ((select id from categories where slug = 'porsiyon-tatli'), 'Fıstıklı Baklava (Porsiyon)', null, '₺ 150', '/uploads/products/1775411105246-795321033.jpg', 23, true),
+  ((select id from categories where slug = 'porsiyon-tatli'), 'Şıllık', null, '₺ 150', '/uploads/products/1775411185110-289496228.jpg', 24, true),
+  ((select id from categories where slug = 'tepsi-tatli'), 'Cevizli Şıllık', null, '₺ 550', '/uploads/products/1775348566308-879162478.jpg', 25, true),
+  ((select id from categories where slug = 'tepsi-tatli'), 'Fıstıklı Şıllık', null, '₺ 650', '/uploads/products/1775411202922-109792425.jpg', 26, true),
+  ((select id from categories where slug = 'tepsi-tatli'), 'Katmer', null, '₺ 650', '/uploads/products/1775411660766-94647587.jpg', 27, true),
+  ((select id from categories where slug = 'tepsi-tatli'), 'Hasır', null, '₺ 650', '/uploads/products/1775501569285-147973683.jpg', 28, true),
+  ((select id from categories where slug = 'tepsi-tatli'), 'Kadayıf', null, '₺ 450', '/uploads/products/1775503141730-639712741.jpg', 29, true);
