@@ -388,7 +388,7 @@ app.get('/menus', async (req, res) => {
 
   const categoryProducts = categories.map((category) => ({
     category,
-    products: (productsByCategory.get(Number(category.id)) || []).slice(0, MENU_ITEMS_PER_CATEGORY)
+    products: productsByCategory.get(Number(category.id)) || []
   }));
   const sections = categoryProducts.filter((item) => item.products.length > 0);
   const categoriesWithProducts = sections.map((item) => item.category);

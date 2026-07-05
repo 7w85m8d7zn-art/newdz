@@ -1,18 +1,20 @@
-<%- include('partials/head') %>
+<%- include('partials/head', { bodyClass: 'menu-body' }) %>
 
-<section class="section-header">
+<section class="section-header menu-hero">
   <div>
-    <p class="eyebrow">Menüler</p>
-    <h1>Menülerimizi Keşfedin</h1>
-    <p class="subtitle">Her kategori için taze ve özel lezzetler.</p>
+    <p class="eyebrow">Dondurmacı Zeki</p>
+    <% if (selectedSlug === 'all') { %>
+      <h1>Menüler</h1>
+      <p class="subtitle">Önce bir kategori seç, ardından içindeki lezzetleri keşfet.</p>
+    <% } else { %>
+      <h1><%= sections[0]?.category?.name || 'Menüler' %></h1>
+      <p class="subtitle">Seçili kategorideki ürünler.</p>
+    <% } %>
   </div>
+  <% if (selectedSlug !== 'all') { %>
+    <a class="btn ghost menu-back" href="/menus">Tüm Menüler</a>
+  <% } %>
 </section>
-
-<nav class="menu-filters">
-  <% categories.forEach((category) => { %>
-    <a class="menu-filter <%= selectedSlug === category.slug ? 'active' : '' %>" href="/menus?kategori=<%= category.slug %>"><%= category.name %></a>
-  <% }) %>
-</nav>
 
 <% if (sections.length === 0) { %>
   <div class="empty-state">
@@ -20,39 +22,54 @@
   </div>
 <% } %>
 
-<% sections.forEach(({ category, products }) => { %>
-  <section class="menu-section">
-    <% if (category) { %>
-      <div class="menu-section-header">
-        <h2><%= category.name %></h2>
-      </div>
-    <% } else if (selectedSlug !== 'all') { %>
-      <div class="menu-section-header">
-        <h2><%= category.name %></h2>
-      </div>
-    <% } %>
+<% if (selectedSlug === 'all') { %>
+  <section class="menu-category-grid" aria-label="Menü kategorileri">
+    <% sections.forEach(({ category, products }, index) => { %>
+      <% const coverImage = products.find((product) => product.image_path)?.image_path; %>
+      <a class="menu-category-card" href="/menus?kategori=<%= category.slug %>" style="--item-index: <%= index %>">
+        <% if (coverImage) { %>
+          <img src="<%= coverImage %>" alt="<%= category.name %>" loading="<%= index < 3 ? 'eager' : 'lazy' %>" decoding="async" />
+        <% } %>
+        <span class="menu-category-shade"></span>
+        <span class="menu-category-content">
+          <span class="menu-category-kicker">Menü</span>
+          <strong><%= category.name %></strong>
+          <span><%= products.length %> ürün</span>
+        </span>
+      </a>
+    <% }) %>
+  </section>
+<% } else { %>
+  <nav class="menu-filters">
+    <% categories.forEach((category) => { %>
+      <a class="menu-filter <%= selectedSlug === category.slug ? 'active' : '' %>" href="/menus?kategori=<%= category.slug %>"><%= category.name %></a>
+    <% }) %>
+  </nav>
 
-    <div class="product-list">
-      <% products.forEach((product) => { %>
-        <div class="product-card">
-          <% if (product.image_path) { %>
-            <img class="product-image" src="<%= product.image_path %>" alt="<%= product.name %>" loading="lazy" decoding="async" />
-          <% } %>
-          <div class="product-info">
-            <div class="product-meta">
-              <h3><%= product.name %></h3>
-              <% if (product.price) { %>
-                <span class="price"><%= formatPrice(product.price) %></span>
+  <% sections.forEach(({ category, products }) => { %>
+    <section class="menu-section">
+      <div class="product-list menu-product-list">
+        <% products.forEach((product, index) => { %>
+          <article class="product-card menu-product-card" style="--item-index: <%= index %>">
+            <% if (product.image_path) { %>
+              <img class="product-image" src="<%= product.image_path %>" alt="<%= product.name %>" loading="<%= index < 4 ? 'eager' : 'lazy' %>" decoding="async" />
+            <% } %>
+            <div class="product-info">
+              <div class="product-meta">
+                <h3><%= product.name %></h3>
+                <% if (product.price) { %>
+                  <span class="price"><%= formatPrice(product.price) %></span>
+                <% } %>
+              </div>
+              <% if (product.description) { %>
+                <p><%= product.description %></p>
               <% } %>
             </div>
-            <% if (product.description) { %>
-              <p><%= product.description %></p>
-            <% } %>
-          </div>
-        </div>
-      <% }) %>
-    </div>
-  </section>
-<% }) %>
+          </article>
+        <% }) %>
+      </div>
+    </section>
+  <% }) %>
+<% } %>
 
 <%- include('partials/footer') %>
