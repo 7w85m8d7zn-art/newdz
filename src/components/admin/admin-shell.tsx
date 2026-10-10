@@ -1,4 +1,4 @@
-import { SafeLink } from "@/components/ui/safe-link"
+import SafeLink from "next/link"
 
 import { LogoutButton } from "@/components/auth/logout-button"
 import { adminNavigation } from "@/data/admin-content"
