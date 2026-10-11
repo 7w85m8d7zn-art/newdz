@@ -1,15 +1,32 @@
-function requireEnv(name: string) {
-  const value = process.env[name];
+function requireEnv(name: string, value: string | undefined) {
+  const normalizedValue = value?.trim()
 
-  if (!value) {
-    throw new Error(`${name} is not defined.`);
+  if (!normalizedValue) {
+    throw new Error(`${name} is not defined.`)
   }
 
-  return value;
+  return normalizedValue
 }
 
-export const env = {
-  supabaseUrl: requireEnv("NEXT_PUBLIC_SUPABASE_URL"),
-  supabasePublishableKey: requireEnv("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY"),
-  supabaseServiceRoleKey: requireEnv("SUPABASE_SERVICE_ROLE_KEY"),
-};
+export function getSupabasePublicEnv() {
+  return {
+    supabaseUrl: requireEnv(
+      "NEXT_PUBLIC_SUPABASE_URL",
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+    ),
+    supabasePublishableKey: requireEnv(
+      "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY",
+      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY,
+    ),
+  }
+}
+
+export function getSupabaseServerEnv() {
+  return {
+    ...getSupabasePublicEnv(),
+    supabaseServiceRoleKey: requireEnv(
+      "SUPABASE_SERVICE_ROLE_KEY",
+      process.env.SUPABASE_SERVICE_ROLE_KEY,
+    ),
+  }
+}

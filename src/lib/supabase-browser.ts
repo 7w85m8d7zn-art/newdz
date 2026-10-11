@@ -1,6 +1,8 @@
 import { createClient } from "@supabase/supabase-js";
-import { env } from "./env";
+import { getSupabasePublicEnv } from "./env"
 
 export function createSupabaseBrowserClient() {
-  return createClient(env.supabaseUrl, env.supabasePublishableKey);
+  const env = getSupabasePublicEnv()
+
+  return createClient(env.supabaseUrl, env.supabasePublishableKey)
 }

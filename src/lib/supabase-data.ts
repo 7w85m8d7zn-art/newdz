@@ -15,6 +15,12 @@ const SUPABASE_CONNECTION_ERROR_PATTERNS = [
   "can't reach database server",
 ]
 
+const SUPABASE_CONFIGURATION_ERROR_PATTERNS = [
+  "next_public_supabase_url is not defined",
+  "next_public_supabase_publishable_default_key is not defined",
+  "supabase_service_role_key is not defined",
+]
+
 function includesConnectionError(text: string) {
   const normalized = text.toLowerCase()
   return SUPABASE_CONNECTION_ERROR_PATTERNS.some((pattern) =>
@@ -76,12 +82,29 @@ export function isSupabaseConnectionError(error: unknown) {
   return includesConnectionError(message)
 }
 
+function isSupabaseConfigurationError(error: unknown) {
+  if (!(error instanceof Error)) {
+    return false
+  }
+
+  const message = error.message.toLowerCase()
+  return SUPABASE_CONFIGURATION_ERROR_PATTERNS.some((pattern) =>
+    message.includes(pattern),
+  )
+}
+
 function isContentFallbackEnabled() {
   const value = process.env.ENABLE_CONTENT_FALLBACK?.trim().toLowerCase()
   return value === "true" || value === "1"
 }
 
 export function shouldUseSupabaseFallback(error: unknown) {
+  // Ziyaretçi sayfaları, deployment sırasında Supabase henüz
+  // yapılandırılmamış olsa bile repodaki tam menüyle üretilebilsin.
+  if (isSupabaseConfigurationError(error)) {
+    return true
+  }
+
   if (!isSupabaseConnectionError(error)) {
     return false
   }
