@@ -715,7 +715,13 @@ async function getMenuProducts() {
 
   if (error) {
     console.warn('Menü ürünleri alınamadı:', error.message);
-    return [];
+    if (!ensureSqliteFallback()) return [];
+    return sqlite.prepare(`
+      SELECT id, category_id, name, description, price, image_path, sort_order, active
+      FROM products
+      WHERE active = 1
+      ORDER BY sort_order ASC, id ASC
+    `).all();
   }
 
   return data || [];
