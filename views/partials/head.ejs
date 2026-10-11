@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title><%= pageTitle %> | QR Menü</title>
+  <% const bodyClassSafe = typeof bodyClass !== 'undefined' ? bodyClass : ''; %>
+  <% let initialBg = '#f7efe5'; %>
+  <% if (bodyClassSafe.includes('admin-body')) { initialBg = '#fbf8f3'; } %>
+  <% if (bodyClassSafe.includes('login-body')) { initialBg = '#0b0b0f'; } %>
+  <% if (bodyClassSafe.includes('home-body')) { initialBg = '#0f0f0f'; } %>
+  <% if (bodyClassSafe.includes('menu-body')) { initialBg = '#140f0d'; } %>
+  <meta name="theme-color" content="<%= initialBg %>" />
+  <style>
+    html, body { background-color: <%= initialBg %>; }
+  </style>
+  <% if (typeof preconnectOrigins !== 'undefined' && Array.isArray(preconnectOrigins)) { %>
+    <% preconnectOrigins.forEach((origin) => { %>
+      <link rel="preconnect" href="<%= origin %>" crossorigin />
+    <% }) %>
+  <% } %>
+  <% if (typeof preloadImages !== 'undefined' && Array.isArray(preloadImages)) { %>
+    <% preloadImages.forEach((imageUrl) => { %>
+      <link rel="preload" as="image" href="<%= imageUrl %>" />
+    <% }) %>
+  <% } %>
+  <link rel="icon" href="/favicon.ico?v=1" sizes="any" />
+  <link rel="shortcut icon" href="/favicon.ico?v=1" type="image/x-icon" />
+  <link rel="apple-touch-icon" href="/favicon.ico?v=1" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Luckiest+Guy&family=Montserrat:wght@400;600;700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/styles.css?v=7" />
+</head>
+<body class="<%= typeof bodyClass !== 'undefined' ? bodyClass : '' %>">
+  <header class="site-header">
+    <div class="container header-inner">
+      <% if (bodyClassSafe.includes('menu-body')) { %>
+        <a class="header-back <%= typeof menuBackVisible !== 'undefined' && menuBackVisible ? '' : 'is-hidden' %>" href="/menus" aria-label="Menülere geri dön" data-menu-back>
+          <span aria-hidden="true">←</span>
+        </a>
+      <% } %>
+      <a class="logo" href="/">Dondurmacı Zeki</a>
+    </div>
+  </header>
+  <main class="container page">

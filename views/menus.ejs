@@ -1,0 +1,152 @@
+<% const initialSlug = selectedSlug || 'all'; %>
+<% const initialSection = sections.find((section) => section.category.slug === initialSlug); %>
+<%- include('partials/head', { bodyClass: 'menu-body', menuBackVisible: initialSlug !== 'all' }) %>
+
+<section class="section-header menu-hero" data-menu-hero>
+  <div>
+    <div class="menu-kicker-row">
+      <p class="eyebrow">Dondurmacı Zeki</p>
+    </div>
+    <h1 data-menu-title><%= initialSection?.category?.name || 'Menüler' %></h1>
+    <p class="subtitle" data-menu-subtitle>
+      <%= initialSection ? 'Seçili kategorideki ürünler.' : 'Önce bir kategori seç, ardından içindeki lezzetleri keşfet.' %>
+    </p>
+  </div>
+</section>
+
+<% if (sections.length === 0) { %>
+  <div class="empty-state">
+    <p>Şu anda menümüze ürünler eklenmedi düzenleme bakım aşamasındayız. Anlayışınız için teşekkürler.</p>
+  </div>
+<% } %>
+
+<section class="menu-category-grid menu-view <%= initialSlug === 'all' ? 'is-active' : '' %>" aria-label="Menü kategorileri" data-menu-categories>
+  <% sections.forEach(({ category, products }, index) => { %>
+    <% const coverImage = products.find((product) => product.image_path)?.image_path; %>
+    <a
+      class="menu-category-card"
+      href="/menus?kategori=<%= category.slug %>"
+      style="--item-index: <%= index %>"
+      data-menu-open="<%= category.slug %>"
+      data-menu-name="<%= category.name %>"
+    >
+      <% if (coverImage) { %>
+        <img src="<%= coverImage %>" alt="<%= category.name %>" loading="<%= index < 3 ? 'eager' : 'lazy' %>" decoding="async" />
+      <% } %>
+      <span class="menu-category-shade"></span>
+      <span class="menu-category-content">
+        <span class="menu-category-kicker">Menü</span>
+        <strong><%= category.name %></strong>
+        <span><%= products.length %> ürün</span>
+      </span>
+    </a>
+  <% }) %>
+</section>
+
+<section class="menu-detail-view menu-view <%= initialSlug !== 'all' ? 'is-active' : '' %>" data-menu-detail>
+  <nav class="menu-filters">
+    <% categories.forEach((category) => { %>
+      <a
+        class="menu-filter <%= initialSlug === category.slug ? 'active' : '' %>"
+        href="/menus?kategori=<%= category.slug %>"
+        data-menu-open="<%= category.slug %>"
+        data-menu-name="<%= category.name %>"
+      ><%= category.name %></a>
+    <% }) %>
+  </nav>
+
+  <% sections.forEach(({ category, products }) => { %>
+    <section class="menu-section menu-panel <%= initialSlug === category.slug ? 'is-active' : '' %>" data-menu-panel="<%= category.slug %>" data-menu-name="<%= category.name %>">
+      <div class="product-list menu-product-list">
+        <% products.forEach((product, index) => { %>
+          <article class="product-card menu-product-card" style="--item-index: <%= index %>">
+            <% if (product.image_path) { %>
+              <img class="product-image" src="<%= product.image_path %>" alt="<%= product.name %>" loading="<%= initialSlug === category.slug && index < 4 ? 'eager' : 'lazy' %>" decoding="async" />
+            <% } %>
+            <div class="product-info">
+              <div class="product-meta">
+                <h3><%= product.name %></h3>
+                <% if (product.price) { %>
+                  <span class="price"><%= formatPrice(product.price) %></span>
+                <% } %>
+              </div>
+              <% if (product.description) { %>
+                <p><%= product.description %></p>
+              <% } %>
+            </div>
+          </article>
+        <% }) %>
+      </div>
+    </section>
+  <% }) %>
+</section>
+
+<script>
+  (function () {
+    const title = document.querySelector('[data-menu-title]');
+    const subtitle = document.querySelector('[data-menu-subtitle]');
+    const backLinks = Array.from(document.querySelectorAll('[data-menu-back]'));
+    const categoryView = document.querySelector('[data-menu-categories]');
+    const detailView = document.querySelector('[data-menu-detail]');
+    const panels = Array.from(document.querySelectorAll('[data-menu-panel]'));
+    const openLinks = Array.from(document.querySelectorAll('[data-menu-open]'));
+    const filters = Array.from(document.querySelectorAll('.menu-filter'));
+
+    const setActiveMenu = (slug, options = {}) => {
+      const isAll = !slug || slug === 'all';
+      const panel = panels.find((item) => item.dataset.menuPanel === slug);
+      if (!isAll && !panel) return;
+
+      categoryView?.classList.toggle('is-active', isAll);
+      detailView?.classList.toggle('is-active', !isAll);
+      backLinks.forEach((back) => back.classList.toggle('is-hidden', isAll));
+
+      panels.forEach((item) => {
+        item.classList.toggle('is-active', !isAll && item === panel);
+      });
+
+      filters.forEach((item) => {
+        item.classList.toggle('active', !isAll && item.dataset.menuOpen === slug);
+      });
+
+      if (title) {
+        title.textContent = isAll ? 'Menüler' : panel.dataset.menuName;
+      }
+      if (subtitle) {
+        subtitle.textContent = isAll
+          ? 'Önce bir kategori seç, ardından içindeki lezzetleri keşfet.'
+          : 'Seçili kategorideki ürünler.';
+      }
+
+      if (options.push !== false) {
+        const nextUrl = isAll ? '/menus' : `/menus?kategori=${encodeURIComponent(slug)}`;
+        window.history.pushState({ menuSlug: isAll ? 'all' : slug }, '', nextUrl);
+      }
+
+      if (options.scroll !== false) {
+        window.scrollTo({ top: 0, behavior: 'auto' });
+      }
+    };
+
+    openLinks.forEach((link) => {
+      link.addEventListener('click', (event) => {
+        event.preventDefault();
+        setActiveMenu(link.dataset.menuOpen);
+      });
+    });
+
+    backLinks.forEach((back) => {
+      back.addEventListener('click', (event) => {
+        event.preventDefault();
+        setActiveMenu('all');
+      });
+    });
+
+    window.addEventListener('popstate', () => {
+      const params = new URLSearchParams(window.location.search);
+      setActiveMenu(params.get('kategori') || 'all', { push: false, scroll: false });
+    });
+  })();
+</script>
+
+<%- include('partials/footer') %>

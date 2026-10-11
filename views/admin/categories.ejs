@@ -1,0 +1,133 @@
+<%- include('../partials/head', { bodyClass: 'admin-body' }) %>
+
+<div class="admin-layout">
+  <%- include('../partials/admin_nav', { adminActive: 'menu', adminSub: 'categories' }) %>
+  <div class="admin-content">
+    <h1 class="admin-title">Menü Kategorileri</h1>
+
+    <section class="admin-section">
+      <form class="form inline" method="POST" action="/admin/categories">
+        <label>
+          Yeni Kategori
+          <input type="text" name="name" placeholder="Örn: Künefe" required />
+        </label>
+        <button class="btn" type="submit">Oluştur</button>
+      </form>
+    </section>
+
+    <section class="admin-section">
+      <div class="table categories-table">
+        <div class="table-row table-head">
+          <div>Kategori</div>
+          <div>İşlem</div>
+        </div>
+        <% if (categories.length === 0) { %>
+          <div class="table-row">
+            <div>-</div>
+            <div>-</div>
+          </div>
+        <% } %>
+        <% categories.forEach((category) => { %>
+          <div class="table-row category-row" data-category-id="<%= category.id %>">
+            <div class="product-title">
+              <span class="drag-handle" data-drag-handle title="Sürükle">↕</span>
+              <strong><%= category.name %></strong>
+            </div>
+            <div>
+          <form method="POST" action="/admin/categories/<%= category.id %>/delete" data-confirm="Silmek istiyor musunuz?">
+            <button class="btn ghost" type="submit">Sil</button>
+          </form>
+            </div>
+          </div>
+        <% }) %>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script>
+  (function () {
+    const table = document.querySelector('.categories-table');
+    if (!table) return;
+    const rows = Array.from(table.querySelectorAll('.category-row'));
+    if (rows.length < 2) return;
+
+    let draggingRow = null;
+
+    const getDragAfterElement = (container, y) => {
+      const elements = [...container.querySelectorAll('.category-row:not(.dragging)')];
+      return elements.reduce(
+        (closest, child) => {
+          const box = child.getBoundingClientRect();
+          const offset = y - box.top - box.height / 2;
+          if (offset < 0 && offset > closest.offset) {
+            return { offset, element: child };
+          }
+          return closest;
+        },
+        { offset: Number.NEGATIVE_INFINITY, element: null }
+      ).element;
+    };
+
+    const saveOrder = async () => {
+      const ids = Array.from(table.querySelectorAll('.category-row'))
+        .map((row) => Number(row.dataset.categoryId))
+        .filter((id) => Number.isFinite(id));
+      if (!ids.length) return;
+      try {
+        const res = await fetch('/admin/categories/reorder', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify({ order: ids })
+        });
+        let payload = null;
+        try {
+          payload = await res.json();
+        } catch (err) {
+          payload = null;
+        }
+        if (!res.ok || !payload?.ok) {
+          const message = payload?.error || 'Request failed';
+          throw new Error(message);
+        }
+        if (window.appAlert) {
+          window.appAlert('Kategori sıralaması güncellendi.');
+        }
+      } catch (err) {
+        if (window.appAlert) {
+          window.appAlert(`Kategori sıralaması kaydedilemedi: ${err.message || 'hata'}`);
+        }
+      }
+    };
+
+    table.addEventListener('dragover', (event) => {
+      if (!draggingRow) return;
+      event.preventDefault();
+      const after = getDragAfterElement(table, event.clientY);
+      if (!after) {
+        table.appendChild(draggingRow);
+      } else {
+        table.insertBefore(draggingRow, after);
+      }
+    });
+
+    rows.forEach((row) => {
+      const handle = row.querySelector('[data-drag-handle]');
+      if (!handle) return;
+      handle.setAttribute('draggable', 'true');
+      handle.addEventListener('dragstart', (event) => {
+        draggingRow = row;
+        row.classList.add('dragging');
+        event.dataTransfer.effectAllowed = 'move';
+      });
+      handle.addEventListener('dragend', () => {
+        row.classList.remove('dragging');
+        draggingRow = null;
+        saveOrder();
+      });
+    });
+  })();
+</script>
+
+<%- include('../partials/footer') %>

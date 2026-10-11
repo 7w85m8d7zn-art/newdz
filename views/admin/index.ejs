@@ -1,0 +1,119 @@
+<%- include('../partials/head', { bodyClass: 'admin-body' }) %>
+
+<div class="admin-layout">
+  <%- include('../partials/admin_nav', { adminActive: 'overview' }) %>
+  <div class="admin-content">
+    <% const sevenTotal = stats.recent.reduce((sum, item) => sum + item.count, 0); %>
+
+    <header class="dashboard-header">
+      <div>
+        <div class="dashboard-title">GÖSTERGE PANELİ</div>
+        <p class="dashboard-subtitle">Günlük performansı, QR hareketlerini ve operasyon akışını tek ekranda takip et.</p>
+      </div>
+    </header>
+
+    <div class="dashboard-meta">
+      <span class="status-pill">Canlı Admin Kontrol</span>
+      <div class="dashboard-meta-actions">
+        <span class="time-pill" id="dashboard-time"><%= typeof timeLabel !== 'undefined' ? timeLabel : '--:--' %></span>
+        <span class="time-pill" id="dashboard-date"><%= typeof dateLabel !== 'undefined' ? dateLabel : '--' %></span>
+      </div>
+    </div>
+    <p class="dashboard-note">İşletmenin performansını ve ziyaretçi etkileşimlerini anlık olarak takip edin.</p>
+
+    <section class="stats-panel">
+      <div class="stats-row">
+        <article class="stat-block primary">
+          <div class="stat-label">Toplam QR Okuma</div>
+          <div class="stat-value" id="stat-total"><%= stats.total %></div>
+        </article>
+        <article class="stat-block">
+          <div class="stat-label">Bugünkü QR Okuma</div>
+          <div class="stat-value" id="stat-today"><%= stats.today %></div>
+        </article>
+        <article class="stat-block">
+          <div class="stat-label">Son 7 Gün</div>
+          <div class="stat-value" id="stat-seven"><%= sevenTotal %></div>
+        </article>
+      </div>
+      <div class="catalog-row">
+        <div class="catalog-block">
+          <div class="stat-mini-label">Ürün Sayısı</div>
+          <div class="stat-mini-value" id="stat-products"><%= typeof catalog !== 'undefined' && catalog ? catalog.products : 0 %></div>
+        </div>
+        <div class="catalog-block">
+          <div class="stat-mini-label">Kategori Sayısı</div>
+          <div class="stat-mini-value" id="stat-categories"><%= typeof catalog !== 'undefined' && catalog ? catalog.categories : 0 %></div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<script>
+  (function () {
+    const timeEl = document.getElementById('dashboard-time');
+    const dateEl = document.getElementById('dashboard-date');
+    const totalEl = document.getElementById('stat-total');
+    const todayEl = document.getElementById('stat-today');
+    const sevenEl = document.getElementById('stat-seven');
+    const productsEl = document.getElementById('stat-products');
+    const categoriesEl = document.getElementById('stat-categories');
+    const tableEl = document.getElementById('stats-table');
+    if (!timeEl || !dateEl) return;
+
+    const formatTime = (date) =>
+      new Intl.DateTimeFormat('tr-TR', { hour: '2-digit', minute: '2-digit' }).format(date);
+    const formatDate = (date) =>
+      new Intl.DateTimeFormat('tr-TR', { day: '2-digit', month: 'long' }).format(date);
+
+    const update = () => {
+      const now = new Date();
+      timeEl.textContent = formatTime(now);
+      dateEl.textContent = formatDate(now);
+    };
+
+    update();
+    setInterval(update, 30000);
+
+    const renderTable = (recent) => {
+      if (!tableEl) return;
+      tableEl.querySelectorAll('.table-row:not(.table-head)').forEach((row) => row.remove());
+      if (!recent || recent.length === 0) {
+        const row = document.createElement('div');
+        row.className = 'table-row';
+        row.innerHTML = '<div>-</div><div>0</div>';
+        tableEl.appendChild(row);
+        return;
+      }
+      recent.forEach((item) => {
+        const row = document.createElement('div');
+        row.className = 'table-row';
+        row.innerHTML = `<div>${item.date}</div><div>${item.count}</div>`;
+        tableEl.appendChild(row);
+      });
+    };
+
+    const refreshStats = async () => {
+      try {
+        const res = await fetch('/admin/stats', { headers: { 'Accept': 'application/json' } });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (totalEl) totalEl.textContent = data.total ?? 0;
+        if (todayEl) todayEl.textContent = data.today ?? 0;
+        if (sevenEl) sevenEl.textContent = data.sevenTotal ?? 0;
+        if (productsEl) productsEl.textContent = data.catalog?.products ?? 0;
+        if (categoriesEl) categoriesEl.textContent = data.catalog?.categories ?? 0;
+        renderTable(data.recent);
+      } catch (err) {
+        // ignore network errors, next tick will retry
+      }
+    };
+
+    refreshStats();
+    setInterval(refreshStats, 30000);
+  })();
+</script>
+
+<%- include('../partials/footer') %>
